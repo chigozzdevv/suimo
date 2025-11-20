@@ -117,8 +117,8 @@ export function ProviderSettingsPage() {
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <Bell className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-blue-400">
+                <Bell className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-parchment">General Settings</p>
@@ -174,8 +174,8 @@ export function ProviderSettingsPage() {
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <WalletIcon className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-green-400">
+                <WalletIcon className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-parchment">Payout Wallet</p>
@@ -210,8 +210,8 @@ export function ProviderSettingsPage() {
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <ShieldCheck className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-purple-400">
+                <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-parchment">Change password</p>
@@ -269,8 +269,8 @@ export function ProviderSettingsPage() {
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <Shield className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-amber-400">
+                <Shield className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-parchment">Access Control</p>

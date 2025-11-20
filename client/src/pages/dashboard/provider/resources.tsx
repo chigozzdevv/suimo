@@ -230,19 +230,22 @@ export function ResourcesPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
-          icon={<FileText className="h-5 w-5 text-sand" />}
+          icon={FileText}
+          color="text-blue-400"
           label="Total Resources"
           value={resources.length.toString()}
           helper="Active listings"
         />
         <StatCard
-          icon={<CheckCircle className="h-5 w-5 text-sand" />}
+          icon={CheckCircle}
+          color="text-green-400"
           label="Verified"
           value={resources.filter((r) => r.verified).length.toString()}
           helper={`${resources.length > 0 ? Math.round((resources.filter((r) => r.verified).length / resources.length) * 100) : 0}% rate`}
         />
         <StatCard
-          icon={<FileText className="h-5 w-5 text-fog" />}
+          icon={FileText}
+          color="text-purple-400"
           label="Avg Price"
           value={
             resources.length > 0
@@ -276,10 +279,10 @@ export function ResourcesPage() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <h3 className="text-parchment font-semibold">{resource.title}</h3>
-                          {resource.verified && <CheckCircle className="h-4 w-4 text-sand" />}
+                          {resource.verified && <CheckCircle className="h-4 w-4 text-parchment" />}
                           <span
                             className={`rounded px-2 py-0.5 text-xs ${
-                              resource.visibility === 'restricted' ? 'bg-ember/10 text-ember' : 'bg-sand/10 text-sand'
+                              resource.visibility === 'restricted' ? 'bg-ember/10 text-ember' : 'bg-white/5 text-parchment'
                             }`}
                           >
                             {resource.visibility || 'public'}
@@ -318,24 +321,25 @@ export function ResourcesPage() {
                         <span className="rounded bg-white/5 px-2 py-1 uppercase">{resource.format}</span>
                         {resource.domain && <span>{resource.domain}</span>}
                         {typeof resource.price_flat === 'number' && (
-                          <span className="text-sand">{formatCurrency(resource.price_flat)}</span>
+                          <span className="text-parchment">{formatCurrency(resource.price_flat)}</span>
                         )}
                         {typeof resource.price_per_kb === 'number' && (
-                          <span className="text-sand">{formatCurrency(resource.price_per_kb)}/KB</span>
+                          <span className="text-parchment">{formatCurrency(resource.price_per_kb)}/KB</span>
                         )}
                       </div>
                       {preview && (
-                        <div className="mt-4 rounded-lg border border-white/5 bg-black/20 p-3 text-xs text-fog">
+                        <div className="mt-4 rounded-lg border border-white/5 bg-white/5 p-3 text-xs text-fog">
                           <div className="flex items-center justify-between text-[11px] uppercase tracking-widest text-white/40">
                             <span>Preview</span>
                             <button
-                              className="text-[11px] text-sand hover:text-sand/80"
+                              className="text-[11px] text-parchment hover:text-parchment/80"
                               onClick={() =>
                                 setExpandedResourceId(isExpanded ? null : resource._id)
                               }
                             >
                               {isExpanded ? 'Hide' : 'Expand'}
                             </button>
+                          
                           </div>
                           <p className={`mt-2 whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-3'}`}>{preview}</p>
                         </div>
@@ -357,7 +361,7 @@ export function ResourcesPage() {
                 required
                 value={resourceForm.title}
                 onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
-                className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
               />
             </Field>
             <Field label="Type">
@@ -402,7 +406,7 @@ export function ResourcesPage() {
           {resourceForm.type === 'file' && (
             <Field label="Upload File">
               <div className="flex items-center gap-3">
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/20 bg-black/40 px-4 py-2 text-sm text-parchment hover:border-sand/40">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-parchment hover:border-white/40">
                   <Upload className="h-4 w-4" />
                   {resourceForm.file ? resourceForm.file.name : 'Choose file'}
                   <input type="file" onChange={handleFileChange} className="hidden" />
@@ -425,7 +429,7 @@ export function ResourcesPage() {
                       <button
                         type="button"
                         onClick={() => navigate('/dashboard/provider/domains')}
-                        className="text-sand hover:underline"
+                        className="text-parchment hover:underline"
                       >
                         Verify a domain first
                       </button>
@@ -447,7 +451,7 @@ export function ResourcesPage() {
                     value={resourceForm.path}
                     onChange={(e) => setResourceForm({ ...resourceForm, path: e.target.value })}
                     placeholder="/docs"
-                    className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
                   />
                 </Field>
               </div>
@@ -458,7 +462,7 @@ export function ResourcesPage() {
               value={resourceForm.summary}
               onChange={(e) => setResourceForm({ ...resourceForm, summary: e.target.value })}
               rows={3}
-              className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
             />
           </Field>
           <div className="space-y-2">
@@ -485,14 +489,14 @@ export function ResourcesPage() {
               value={resourceForm.samplePreview}
               onChange={(e) => setResourceForm({ ...resourceForm, samplePreview: e.target.value })}
               rows={3}
-              className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
             />
           </div>
           <Field label="Tags (comma separated)">
             <input
               value={resourceForm.tags}
               onChange={(e) => setResourceForm({ ...resourceForm, tags: e.target.value })}
-              className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
             />
           </Field>
           <div className="space-y-4">
@@ -505,7 +509,7 @@ export function ResourcesPage() {
                     step="0.0001"
                     value={resourceForm.pricePerKb}
                     onChange={(e) => setResourceForm({ ...resourceForm, pricePerKb: e.target.value })}
-                    className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
                   />
                 </Field>
                 <div className="flex flex-col justify-end">
@@ -534,7 +538,7 @@ export function ResourcesPage() {
                   step="0.01"
                   value={resourceForm.priceFlat}
                   onChange={(e) => setResourceForm({ ...resourceForm, priceFlat: e.target.value })}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
             )}
@@ -637,7 +641,7 @@ function FancySelect({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-parchment transition hover:border-white/30 focus:border-sand/40 focus:outline-none"
+        className="flex w-full items-center justify-between rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-parchment transition hover:border-white/30 focus:border-white/40 focus:outline-none"
       >
         <span className={selected ? '' : 'text-fog/70'}>{selected?.label ?? placeholder}</span>
         <ChevronDown className="h-4 w-4 text-fog" />
@@ -655,7 +659,7 @@ function FancySelect({
                   setOpen(false);
                 }}
                 className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
-                  isActive ? 'bg-sand text-ink' : 'text-parchment hover:bg-white/10'
+                  isActive ? 'bg-white/10 text-parchment' : 'text-parchment hover:bg-white/10'
                 }`}
               >
                 {opt.label}
@@ -668,15 +672,17 @@ function FancySelect({
   );
 }
 
-function StatCard({ icon, label, value, helper }: { icon: ReactNode; label: string; value: string; helper: string }) {
+function StatCard({ icon: Icon, color, label, value, helper }: { icon: any; color: string; label: string; value: string; helper: string }) {
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm text-fog">{label}</span>
-          {icon}
+        <div className="mb-3 flex items-start justify-between">
+          <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
+            <Icon className="h-5 w-5" />
+          </div>
         </div>
         <div className="text-2xl font-semibold text-parchment">{value}</div>
+        <div className="text-sm text-fog">{label}</div>
         <div className="text-xs text-fog mt-1">{helper}</div>
       </CardContent>
     </Card>

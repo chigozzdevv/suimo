@@ -83,7 +83,9 @@ export function ResourcesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-fog text-sm">Total Resources</span>
-                <FileText className="w-5 h-5 text-sand" />
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-blue-400">
+                  <FileText className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {resources.length}
@@ -102,7 +104,9 @@ export function ResourcesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-fog text-sm">Verified</span>
-                <CheckCircle className="w-5 h-5 text-sand" />
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {resources.filter((r) => r.verified).length}
@@ -121,7 +125,9 @@ export function ResourcesPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-fog text-sm">Filtered</span>
-                <Filter className="w-5 h-5 text-fog" />
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">
+                  <Filter className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {filteredResources.length}
@@ -147,7 +153,7 @@ export function ResourcesPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search resources..."
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-parchment placeholder-fog/50 focus:outline-none focus:border-sand/50"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-parchment placeholder-fog/50 focus:outline-none focus:border-white/40"
                 />
               </div>
               <div className="flex gap-2">
@@ -157,7 +163,7 @@ export function ResourcesPage() {
                     onClick={() => setFilterType(type)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
                       filterType === type
-                        ? 'bg-sand text-ink'
+                        ? 'bg-white/10 text-parchment'
                         : 'bg-white/5 text-fog hover:text-parchment'
                     }`}
                   >
@@ -184,7 +190,7 @@ export function ResourcesPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="text-parchment font-medium">{resource.title}</h3>
                         {resource.verified && (
-                          <CheckCircle className="w-4 h-4 text-sand" />
+                          <CheckCircle className="w-4 h-4 text-parchment" />
                         )}
                       </div>
                         {(resource.summary || resource.sample_preview) && (
@@ -192,7 +198,7 @@ export function ResourcesPage() {
                             <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-widest text-white/40">
                               <span>Preview</span>
                               <button
-                                className="flex items-center gap-1 text-[11px] text-sand"
+                                className="flex items-center gap-1 text-[11px] text-parchment"
                                 onClick={() =>
                                   setExpandedResourceId(
                                     expandedResourceId === resource._id ? null : resource._id
@@ -211,7 +217,7 @@ export function ResourcesPage() {
                               </button>
                             </div>
                             <p
-                              className={`rounded-lg bg-black/20 p-3 text-xs text-fog ${
+                              className={`rounded-lg bg-white/5 p-3 text-xs text-fog ${
                                 expandedResourceId === resource._id ? '' : 'line-clamp-3'
                               }`}
                             >
@@ -220,7 +226,7 @@ export function ResourcesPage() {
                           </div>
                         )}
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-xs px-2 py-1 rounded bg-sand/10 text-sand">
+                        <span className="text-xs px-2 py-1 rounded bg-white/5 text-parchment">
                           {resource.type}
                         </span>
                         <span className="text-xs px-2 py-1 rounded bg-white/5 text-fog">
@@ -250,7 +256,7 @@ export function ResourcesPage() {
                           </div>
                         )}
                         {resource.price_per_kb && (
-                          <div className="text-sand text-sm">
+                          <div className="text-parchment text-sm">
                             {formatCurrency(resource.price_per_kb)}/KB
                           </div>
                         )}

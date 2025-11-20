@@ -214,8 +214,8 @@ export function DomainsPage() {
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sand/10">
-                    <Shield className="h-5 w-5 text-sand" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                    <Shield className="h-5 w-5 text-parchment" />
                   </div>
                   <div>
                     <h3 className="font-medium text-parchment">Add New Domain</h3>
@@ -244,7 +244,7 @@ export function DomainsPage() {
                     onChange={(e) => setVerifyDomain(e.target.value)}
                     onBlur={() => setVerifyDomain((value) => sanitizeDomain(value))}
                     placeholder="example.com"
-                    className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-parchment focus:border-sand/40 focus:outline-none"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
                   />
                 </div>
 
@@ -257,7 +257,7 @@ export function DomainsPage() {
                         onClick={() => setVerifyMethod(method)}
                         className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm capitalize transition-colors ${
                           verifyMethod === method
-                            ? 'border-2 border-sand bg-sand/10 text-parchment'
+                            ? 'border-2 border-white/30 bg-white/10 text-parchment'
                             : 'border-2 border-white/10 bg-white/5 text-fog hover:border-white/20 hover:text-parchment'
                         }`}
                       >
@@ -280,11 +280,11 @@ export function DomainsPage() {
                   </Button>
                 ) : (
                   <div className="space-y-4">
-                    <div className="rounded-lg border border-sand/30 bg-sand/5 p-4">
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                       <p className="mb-2 text-sm font-medium text-parchment">
                         {verifyMethod === 'dns' ? 'Add this TXT record:' : 'Create this file:'}
                       </p>
-                      <code className="block rounded bg-black/40 px-3 py-2 text-xs text-sand break-all">
+                      <code className="block rounded bg-white/[0.03] px-3 py-2 text-xs text-parchment break-all">
                         {verifyInit.instructions}
                       </code>
                     </div>
@@ -292,7 +292,7 @@ export function DomainsPage() {
                       onClick={handleVerifyCheck}
                       disabled={verificationLoading}
                       variant="outline"
-                      className="w-full gap-2 border-sand/40 text-sand hover:bg-sand/10"
+                      className="w-full gap-2 border-white/30 text-parchment hover:bg-white/10"
                     >
                       {verificationLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                       Verify Domain
@@ -377,7 +377,7 @@ export function DomainsPage() {
                       onClick={() => handleRetryPendingDomain(domain)}
                       aria-label={`Retry verification for ${domain.domain}`}
                       disabled={checkingDomainId === domain._id}
-                      className={`${iconButtonBase} border-sand/40 text-sand hover:border-sand/60 hover:bg-sand/10`}
+                      className={`${iconButtonBase} border-white/30 text-parchment hover:border-white/50 hover:bg-white/10`}
                     >
                       {checkingDomainId === domain._id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

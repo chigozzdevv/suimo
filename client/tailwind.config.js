@@ -9,15 +9,15 @@ export default {
         ink: '#0E0E0E',
         parchment: '#E6E2DC',
         fog: '#B9B1A5',
-        // Brand primary (blue)
-        sand: '#2563EB',
+        sand: '#D8C8A8',
+        brand: '#2563EB',
         ember: '#E07555',
       },
       fontFamily: {
         display: ['Space Grotesk', ...fontFamily.sans],
       },
       boxShadow: {
-        glow: '0 0 60px rgba(37, 99, 235, 0.15)',
+        glow: '0 0 60px rgba(216, 200, 168, 0.15)',
       },
     },
   },

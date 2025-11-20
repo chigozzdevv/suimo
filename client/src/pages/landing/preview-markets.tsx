@@ -70,7 +70,7 @@ export function PreviewMarkets() {
                 </div>
               </div>
               {(r.sample_preview || r.summary) && (
-                <p className="mt-3 line-clamp-3 rounded-lg bg-black/20 p-3 text-xs text-fog">{r.sample_preview || r.summary}</p>
+                <p className="mt-3 line-clamp-3 rounded-lg bg-white/5 p-3 text-xs text-fog">{r.sample_preview || r.summary}</p>
               )}
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex gap-2 text-xs">

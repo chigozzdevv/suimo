@@ -78,6 +78,7 @@ body {
 .landing-bg::before {
   display: none;
 }
+
 .section-surface::before {
   content: "";
   position: absolute; inset: 0;

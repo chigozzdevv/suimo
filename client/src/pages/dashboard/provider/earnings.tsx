@@ -56,7 +56,7 @@ export function EarningsPage() {
             onClick={() => setPeriod('30')}
             className={`px-3 py-1 rounded-lg text-sm transition-colors ${
               period === '30'
-                ? 'bg-sand text-ink'
+                ? 'bg-white/10 text-parchment'
                 : 'bg-white/5 text-fog hover:text-parchment'
             }`}
           >
@@ -66,7 +66,7 @@ export function EarningsPage() {
             onClick={() => setPeriod('90')}
             className={`px-3 py-1 rounded-lg text-sm transition-colors ${
               period === '90'
-                ? 'bg-sand text-ink'
+                ? 'bg-white/10 text-parchment'
                 : 'bg-white/5 text-fog hover:text-parchment'
             }`}
           >
@@ -83,13 +83,15 @@ export function EarningsPage() {
         >
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Period Total</span>
-                <DollarSign className="w-5 h-5 text-sand" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
+                  <DollarSign className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {formatCurrency(earnings?.period_total || 0)}
               </div>
+              <div className="text-sm text-fog">Period Total</div>
               <div className="text-xs text-fog mt-1">Last {period} days</div>
             </CardContent>
           </Card>
@@ -102,13 +104,15 @@ export function EarningsPage() {
         >
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">All Time</span>
-                <TrendingUp className="w-5 h-5 text-sand" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {formatCurrency(earnings?.total || 0)}
               </div>
+              <div className="text-sm text-fog">All Time</div>
               <div className="text-xs text-fog mt-1">Total earnings</div>
             </CardContent>
           </Card>
@@ -121,13 +125,15 @@ export function EarningsPage() {
         >
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Avg Daily</span>
-                <Activity className="w-5 h-5 text-fog" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-amber-400">
+                  <Activity className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
                 {formatCurrency((earnings?.period_total || 0) / Number(period))}
               </div>
+              <div className="text-sm text-fog">Avg Daily</div>
               <div className="text-xs text-fog mt-1">Last {period} days</div>
             </CardContent>
           </Card>

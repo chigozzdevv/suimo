@@ -119,8 +119,8 @@ export function ConnectorsPage() {
       <Card>
         <CardContent className="space-y-4 p-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sand/10">
-              <ShieldCheck className="h-5 w-5 text-sand" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-green-400">
+              <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
               <h3 className="text-parchment font-semibold">Secrets vault</h3>
@@ -177,7 +177,7 @@ export function ConnectorsPage() {
                         ? { type: 'oauth', access_token: '' }
                         : { type: 'internal' }
                 )}
-                className={`rounded-full px-4 py-1 text-sm capitalize ${formState.type === type ? 'bg-sand text-ink' : 'bg-white/5 text-fog'}`}
+                className={`rounded-full px-4 py-1 text-sm capitalize ${formState.type === type ? 'bg-white/10 text-parchment' : 'bg-white/5 text-fog'}`}
               >
                 {type === 'api_key' ? 'API key' : type}
               </button>
@@ -190,21 +190,21 @@ export function ConnectorsPage() {
                 <input
                   value={formState.header}
                   onChange={(e) => setFormState({ ...formState, header: e.target.value })}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
               <Field label="Scheme">
                 <input
                   value={formState.scheme}
                   onChange={(e) => setFormState({ ...formState, scheme: e.target.value })}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
               <Field label="Token">
                 <textarea
                   value={formState.token}
                   onChange={(e) => setFormState({ ...formState, token: e.target.value })}
-                  className="h-24 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="h-24 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
             </div>
@@ -216,14 +216,14 @@ export function ConnectorsPage() {
                 <input
                   value={formState.header}
                   onChange={(e) => setFormState({ ...formState, header: e.target.value })}
-                  className="w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
               <Field label="Token">
                 <textarea
                   value={formState.token}
                   onChange={(e) => setFormState({ ...formState, token: e.target.value })}
-                  className="h-24 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="h-24 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
             </div>
@@ -235,7 +235,7 @@ export function ConnectorsPage() {
                 <textarea
                   value={formState.access_token}
                   onChange={(e) => setFormState({ ...formState, access_token: e.target.value })}
-                  className="h-24 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-parchment focus:border-sand/40 focus:outline-none"
+                  className="h-24 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-parchment focus:border-white/40 focus:outline-none"
                 />
               </Field>
             </div>

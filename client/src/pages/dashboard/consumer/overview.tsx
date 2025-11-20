@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
+import { Wallet, Lock, Gauge } from 'lucide-react'
 import { api, type ConsumerActivityItem, type TopAgentStat, type TopSourceStat } from '@/services/api'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
@@ -112,9 +113,9 @@ export function ConsumerOverview() {
   }, [])
 
   const statCards = [
-    { label: 'Wallet balance', helper: 'Payer wallet', value: statsError ? '—' : formatCurrency(walletStats.available) },
-    { label: 'Blocked funds', helper: 'Held for crawls', value: statsError ? '—' : formatCurrency(walletStats.blocked) },
-    { label: 'Weekly cap', helper: 'Global spending', value: statsError ? '—' : walletStats.weeklyCap ? formatCurrency(walletStats.weeklyCap) : '—' },
+    { icon: Wallet, color: 'text-green-400', label: 'Wallet balance', helper: 'Payer wallet', value: statsError ? '—' : formatCurrency(walletStats.available) },
+    { icon: Lock, color: 'text-amber-400', label: 'Blocked funds', helper: 'Held for crawls', value: statsError ? '—' : formatCurrency(walletStats.blocked) },
+    { icon: Gauge, color: 'text-blue-400', label: 'Weekly cap', helper: 'Global spending', value: statsError ? '—' : walletStats.weeklyCap ? formatCurrency(walletStats.weeklyCap) : '—' },
   ]
 
   const renderListState = (loading: boolean, error: string | null, empty: boolean) => {
@@ -128,13 +129,14 @@ export function ConsumerOverview() {
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         {statCards.map((item) => (
-          <Card key={item.label}>
-            <CardContent className="space-y-1 p-5">
-              <p className="text-sm text-fog">{item.label}</p>
-              <p className="text-2xl font-semibold text-parchment">{statsLoading ? 'Loading…' : item.value}</p>
-              <p className="text-xs text-fog/70">{item.helper}</p>
-            </CardContent>
-          </Card>
+          <StatsCard
+            key={item.label}
+            icon={item.icon}
+            color={item.color}
+            label={item.label}
+            value={statsLoading ? 'Loading…' : item.value}
+            helper={item.helper}
+          />
         ))}
       </div>
 
@@ -158,7 +160,7 @@ export function ConsumerOverview() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-parchment">{formatCurrency(item.cost)}</p>
-                      <p className={`text-xs uppercase ${item.status === 'settled' ? 'text-sand' : 'text-fog'}`}>{item.status || 'pending'}</p>
+                      <p className={`text-xs uppercase ${item.status === 'settled' ? 'text-parchment' : 'text-fog'}`}>{item.status || 'pending'}</p>
                     </div>
                   </li>
                 ))}
@@ -215,5 +217,22 @@ export function ConsumerOverview() {
         </div>
       </div>
     </motion.div>
+  )
+}
+
+function StatsCard({ icon: Icon, color, label, value, helper }: { icon: any; color: string; label: string; value: string; helper: string }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="mb-2 flex items-start justify-between">
+          <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="text-2xl font-semibold text-parchment">{value}</div>
+        <div className="text-sm text-fog">{label}</div>
+        <div className="text-xs text-fog mt-1">{helper}</div>
+      </CardContent>
+    </Card>
   )
 }

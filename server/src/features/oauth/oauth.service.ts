@@ -112,8 +112,10 @@ function getAuthorizationServerUrls(baseUrl: string) {
 async function getSigningKey() {
   if (!signingKeyPromise) {
     const { ED25519_PRIVATE_KEY_PATH } = process.env as any;
-    const pem = ED25519_PRIVATE_KEY_PATH ? await readFile(ED25519_PRIVATE_KEY_PATH, 'utf8') : undefined;
-    if (!pem) throw new Error('ED25519_PRIVATE_KEY_PATH is required for OAuth signing');
+    if (!ED25519_PRIVATE_KEY_PATH) {
+      throw new Error('ED25519_PRIVATE_KEY_PATH is required for OAuth signing');
+    }
+    const pem = await readFile(ED25519_PRIVATE_KEY_PATH, 'utf8');
     const keyObject = createPrivateKey({ key: pem, format: 'pem' });
     signingKeyPromise = Promise.resolve(keyObject as any);
   }

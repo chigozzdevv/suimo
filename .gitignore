@@ -10,6 +10,8 @@ server/dist/
 server/.env
 server/.env.*
 !server/.env.example
+client/.env
+server/keys/**
 
 .DS_Store
 coverage/

@@ -81,11 +81,13 @@ export function AnalyticsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Total Searches</span>
-                <Search className="w-5 h-5 text-sand" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-blue-400">
+                  <Search className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">{stats?.totalImpressions || 0}</div>
+              <div className="text-sm text-fog">Total Searches</div>
               <div className="text-xs text-fog mt-1">Impressions in period</div>
             </CardContent>
           </Card>
@@ -94,11 +96,13 @@ export function AnalyticsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Period Total</span>
-                <Eye className="w-5 h-5 text-sand" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-purple-400">
+                  <Eye className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">{stats?.totalSelected || 0}</div>
+              <div className="text-sm text-fog">Period Total</div>
               <div className="text-xs text-fog mt-1">Selected resources</div>
             </CardContent>
           </Card>
@@ -107,11 +111,13 @@ export function AnalyticsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Avg Daily</span>
-                <TrendingUp className="w-5 h-5 text-fog" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-amber-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">{Math.round((stats?.selectionRate || 0) * 100)}%</div>
+              <div className="text-sm text-fog">Avg Daily</div>
               <div className="text-xs text-fog mt-1">Selection rate</div>
             </CardContent>
           </Card>
@@ -120,11 +126,13 @@ export function AnalyticsPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-fog text-sm">Unique Users</span>
-                <Users className="w-5 h-5 text-sand" />
+              <div className="mb-3 flex items-start justify-between">
+                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
+                  <Users className="w-5 h-5" />
+                </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">{Math.round((stats?.totalImpressions || 0) / days)}</div>
+              <div className="text-sm text-fog">Unique Users</div>
               <div className="text-xs text-fog mt-1">Avg impressions / day</div>
             </CardContent>
           </Card>

@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { api } from '@/services/api';
@@ -47,28 +47,32 @@ export function OverviewPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          icon={<DollarSign className="h-5 w-5 text-sand" />}
+          icon={DollarSign}
+          color="text-green-400"
           label="Revenue (30d)"
           value={formatCurrency(overview?.earnings.total30d || 0)}
           helper="platform payouts + fees"
           delay={0.1}
         />
         <StatCard
-          icon={<TrendingUp className="h-5 w-5 text-sand" />}
+          icon={TrendingUp}
+          color="text-purple-400"
           label="Avg earning / request"
           value={formatCurrency(overview?.earnings.avgEarning || 0)}
           helper="net of platform fees"
           delay={0.2}
         />
         <StatCard
-          icon={<Search className="h-5 w-5 text-sand" />}
+          icon={Search}
+          color="text-blue-400"
           label="Requests served"
           value={(overview?.earnings.totalRequests || 0).toString()}
           helper="past 30 days"
           delay={0.3}
         />
         <StatCard
-          icon={<Star className="h-5 w-5 text-sand" />}
+          icon={Star}
+          color="text-amber-400"
           label="Selection rate"
           value={`${Math.round((overview?.searchStats.selectionRate || 0) * 100)}%`}
           helper={`${overview?.searchStats.totalSelected || 0} of ${overview?.searchStats.totalImpressions || 0}`}
@@ -141,13 +145,15 @@ export function OverviewPage() {
 }
 
 function StatCard({
-  icon,
+  icon: Icon,
+  color,
   label,
   value,
   helper,
   delay,
 }: {
-  icon: ReactNode;
+  icon: any;
+  color: string;
   label: string;
   value: string;
   helper: string;
@@ -157,11 +163,13 @@ function StatCard({
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }} className="h-full">
       <Card className="h-full">
         <CardContent className="p-5 flex flex-col h-full">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm text-fog">{label}</span>
-            {icon}
+          <div className="mb-3 flex items-start justify-between">
+            <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
+              <Icon className="h-5 w-5" />
+            </div>
           </div>
           <div className="text-2xl font-semibold text-parchment">{value}</div>
+          <div className="text-sm text-fog">{label}</div>
           <div className="text-xs text-fog mt-1">{helper}</div>
         </CardContent>
       </Card>

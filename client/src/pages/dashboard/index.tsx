@@ -192,8 +192,8 @@ export function Dashboard() {
         const Icon = section.icon
         const isActive = section.id === activeSection
         const baseClasses = 'w-full rounded-xl px-4 py-3 text-left transition-colors flex flex-col border '
-        const activeClasses = 'border-sand/40 bg-white/5 text-parchment'
-        const inactiveClasses = 'border-transparent text-fog hover:text-parchment'
+        const activeClasses = 'border-white/20 bg-white/5 text-parchment'
+        const inactiveClasses = 'border-transparent text-fog hover:bg-white/10 hover:text-parchment'
         return (
           <button
             key={section.id}
@@ -269,7 +269,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-ink text-parchment">
-      <div className="fixed inset-y-0 hidden w-72 flex-col border-r border-white/10 bg-[#0c0c0c]/85 px-6 py-8 backdrop-blur md:flex">
+      <div className="fixed inset-y-0 hidden w-72 flex-col border-r border-white/10 bg-[#0b0d17] px-6 py-8 md:flex">
         <Logo className="h-6" />
         <div className="mt-6 flex-1 overflow-y-auto pr-2">{renderSidebarNav('desktop')}</div>
         <div className="mt-6 border-t border-white/10 pt-4">
@@ -280,7 +280,7 @@ export function Dashboard() {
       </div>
 
       <div className="md:pl-72">
-        <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#0f0f0f]/80 px-4 py-4 backdrop-blur md:flex-nowrap md:px-8">
+        <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-[#0b0d17] px-4 py-4 md:flex-nowrap md:px-8">
           <div className="flex items-center gap-3 md:hidden">
             <button onClick={() => setShowMobileNav(true)} className="text-parchment">
               <Menu className="h-6 w-6" />
@@ -305,7 +305,7 @@ export function Dashboard() {
               {workspaceMenuOpen && (
                 <div
                   ref={workspaceMenuRef}
-                  className="absolute left-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[#121212]/95 p-1 shadow-2xl backdrop-blur"
+                  className="absolute left-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[#121a2a]/95 p-1 shadow-2xl"
                 >
                   {workspaceOptions.map((option) => {
                     const isSelected = workspace === option.id
@@ -317,7 +317,7 @@ export function Dashboard() {
                           handleWorkspaceChange(option.id)
                         }}
                         className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                          isSelected ? 'bg-sand text-ink' : 'text-parchment hover:bg-white/10'
+                          isSelected ? 'bg-white/10 text-parchment' : 'text-parchment hover:bg-white/10'
                         }`}
                       >
                         {option.label}
@@ -334,7 +334,7 @@ export function Dashboard() {
               <User className="h-5 w-5" />
             </button>
             {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#111111] p-2 text-sm text-parchment">
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#121a2a] p-2 text-sm text-parchment">
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-white/5">View profile</button>
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-white/5">Settings</button>
                 <button className="w-full rounded-lg px-3 py-2 text-left text-ember hover:bg-white/5" onClick={logout}>
@@ -354,7 +354,7 @@ export function Dashboard() {
 
       {showMobileNav && (
         <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur md:hidden" onClick={() => setShowMobileNav(false)}>
-          <div className="absolute inset-y-0 left-0 w-72 bg-[#0f0f0f] p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-y-0 left-0 w-72 bg-[#0b0d17] p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <Logo className="h-5" />
               <button onClick={() => setShowMobileNav(false)}>

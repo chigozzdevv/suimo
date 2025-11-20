@@ -117,8 +117,8 @@ const MAX_REQUEST_AMOUNT = 5000;
                     {formatCurrency(payerWallet?.onchain?.usdc || 0)}
                   </h2>
                 </div>
-                <div className="w-12 h-12 bg-sand/10 rounded-full flex items-center justify-center">
-                  <WalletIcon className="w-6 h-6 text-sand" />
+                <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
+                  <WalletIcon className="w-6 h-6" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -142,7 +142,7 @@ const MAX_REQUEST_AMOUNT = 5000;
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-white/10">
                   <span className="text-fog">Status</span>
-                  <span className={`font-medium ${payerWallet?.status === 'active' ? 'text-sand' : 'text-ember'}`}>
+                  <span className={`font-medium ${payerWallet?.status === 'active' ? 'text-parchment' : 'text-ember'}`}>
                     {payerWallet?.status || 'N/A'}
                   </span>
                 </div>
@@ -171,8 +171,8 @@ const MAX_REQUEST_AMOUNT = 5000;
                     {formatCurrency(payoutWallet?.onchain?.usdc || 0)}
                   </h2>
                 </div>
-                <div className="w-12 h-12 bg-ember/10 rounded-full flex items-center justify-center">
-                  <TrendingDown className="w-6 h-6 text-ember" />
+                <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-amber-400">
+                  <TrendingDown className="w-6 h-6" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -196,7 +196,7 @@ const MAX_REQUEST_AMOUNT = 5000;
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-white/10">
                   <span className="text-fog">Status</span>
-                  <span className={`font-medium ${payoutWallet?.status === 'active' ? 'text-sand' : 'text-ember'}`}>
+                  <span className={`font-medium ${payoutWallet?.status === 'active' ? 'text-parchment' : 'text-ember'}`}>
                     {payoutWallet?.status || 'N/A'}
                   </span>
                 </div>
@@ -248,7 +248,7 @@ const MAX_REQUEST_AMOUNT = 5000;
             </ResponsiveContainer>
             <div className="flex justify-center gap-6 mt-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-sand" />
+                <div className="w-3 h-3 rounded-full bg-white/40" />
                 <span className="text-sm text-fog">Available</span>
               </div>
               <div className="flex items-center gap-2">
@@ -279,12 +279,12 @@ const MAX_REQUEST_AMOUNT = 5000;
             </div>
           </div>
 
-          <div className="rounded-2xl border border-sand/30 bg-sand/5 p-4">
-            <p className="text-sm font-medium text-sand mb-3">Steps to fund:</p>
-            <ol className="space-y-3 text-sm text-sand/90">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-sm font-medium text-parchment mb-3">Steps to fund:</p>
+            <ol className="space-y-3 text-sm text-parchment/90">
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">1.</span>
-                <span>Visit <a href="https://faucet.sui.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-sand font-medium">faucet.sui.io</a></span>
+                <span>Visit <a href="https://faucet.sui.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-parchment font-medium">faucet.sui.io</a></span>
               </li>
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">2.</span>
@@ -304,7 +304,7 @@ const MAX_REQUEST_AMOUNT = 5000;
           <p className="text-xs text-fog/70">Balances update after confirmation (~1 minute)</p>
 
           {copyToast && (
-            <p className="text-xs text-sand">
+            <p className="text-xs text-parchment">
               {copyToast === 'copied' ? 'Address copied to clipboard' : copyToast}
             </p>
           )}
@@ -324,7 +324,7 @@ const MAX_REQUEST_AMOUNT = 5000;
               max={MAX_REQUEST_AMOUNT}
               value={withdrawAmount}
               onChange={(e) => setWithdrawAmount(e.target.value)}
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment focus:border-sand/50 focus:outline-none"
+              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
             />
           </label>
           <label className="space-y-1 text-sm text-fog">
@@ -332,7 +332,7 @@ const MAX_REQUEST_AMOUNT = 5000;
             <input
               value={withdrawAddress}
               onChange={(e) => setWithdrawAddress(e.target.value)}
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment focus:border-sand/50 focus:outline-none"
+              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
               placeholder="Enter SUI address"
             />
           </label>
@@ -342,7 +342,7 @@ const MAX_REQUEST_AMOUNT = 5000;
           {withdrawStatus && (
             <div
               className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
-                withdrawStatus.tone === 'success' ? 'border-sand/40 bg-sand/10 text-sand' : 'border-ember/40 bg-ember/10 text-ember'
+                withdrawStatus.tone === 'success' ? 'border-white/30 bg-white/10 text-parchment' : 'border-ember/40 bg-ember/10 text-ember'
               }`}
             >
               {withdrawStatus.message}
