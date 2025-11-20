@@ -1,0 +1,91 @@
+import { randomUUID } from 'node:crypto';
+import { getDb } from '@/config/db.js';
+import type { ResourceDoc } from '@/features/resources/resources.model.js';
+import { isDomainVerified } from '@/features/providers/sites.model.js';
+import { findConnectorById } from '@/features/connectors/connectors.model.js';
+
+export async function createResourceForProvider(providerId: string, input: Omit<ResourceDoc, '_id' | 'provider_id' | 'updated_at' | 'verified'>) {
+  const db = await getDb();
+  if (input.type === 'site') {
+    if (!input.domain) {
+      throw new Error('DOMAIN_REQUIRED_FOR_SITE_RESOURCE');
+    }
+    const ok = await isDomainVerified(providerId, input.domain);
+    if (!ok) {
+      throw new Error('SITE_DOMAIN_NOT_VERIFIED');
+    }
+    if (!input.walrus_blob_id && !input.walrus_quilt_id) {
+      // Enforce a connector for origin fetches
+      if (!input.connector_id) {
+        throw new Error('CONNECTOR_REQUIRED_FOR_SITE_FETCH');
+      }
+      const connector = await findConnectorById(input.connector_id);
+      if (!connector) {
+        throw new Error('CONNECTOR_NOT_FOUND');
+      }
+    }
+  }
+  const doc: ResourceDoc = {
+    _id: 'res_' + randomUUID(),
+    provider_id: providerId,
+    title: input.title,
+    type: input.type,
+    format: input.format,
+    domain: input.domain,
+    path: input.path,
+    tags: input.tags,
+    summary: input.summary,
+    sample_preview: (input as any).sample_preview,
+    schema: input.schema,
+    size_bytes: input.size_bytes,
+    price_per_kb: input.price_per_kb,
+    price_flat: input.price_flat,
+    visibility: input.visibility,
+    modes: input.modes,
+    policy: { visibility: input.visibility as any, allow: (input as any).allow_agent_ids, deny_paths: (input as any).deny_paths, modes: input.modes as any },
+    updated_at: new Date().toISOString(),
+    connector_id: input.connector_id,
+    walrus_blob_id: input.walrus_blob_id,
+    walrus_quilt_id: input.walrus_quilt_id,
+    cipher_meta: input.cipher_meta,
+    seal_policy_id: input.seal_policy_id,
+    verified: true,
+  };
+  await db.collection<ResourceDoc>('resources').insertOne(doc as any);
+  return doc;
+}
+
+export async function listResourcesByProvider(providerId: string, limit = 50) {
+  const db = await getDb();
+  return db
+    .collection<ResourceDoc>('resources')
+    .find({ provider_id: providerId } as any)
+    .sort({ updated_at: -1 } as any)
+    .limit(limit)
+    .toArray();
+}
+
+export async function listPublicResources(limit = 24) {
+  const db = await getDb();
+  return db
+    .collection<ResourceDoc>('resources')
+    .find({ $or: [{ visibility: { $exists: false } }, { visibility: 'public' }] } as any)
+    .project({
+      _id: 1,
+      provider_id: 1,
+      title: 1,
+      type: 1,
+      format: 1,
+      domain: 1,
+      summary: 1,
+      tags: 1,
+      sample_preview: 1,
+      price_per_kb: 1,
+      price_flat: 1,
+      verified: 1,
+      updated_at: 1,
+    } as any)
+    .sort({ updated_at: -1 } as any)
+    .limit(limit)
+    .toArray();
+}
