@@ -6,7 +6,7 @@ import { api } from '@/services/api';
 import type { Wallet } from '@/services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Modal } from '@/components/ui/modal';
-import { Wallet as WalletIcon, TrendingDown, Plus, ArrowUpRight, Loader2, Copy, Check } from 'lucide-react';
+import { Wallet as WalletIcon, TrendingDown, Plus, ArrowUpRight, Loader2, Copy, Check, Globe } from 'lucide-react';
 
 export function WalletPage() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -19,6 +19,7 @@ export function WalletPage() {
   const [withdrawStatus, setWithdrawStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
   const [copyToast, setCopyToast] = useState<string | null>(null);
+  const network = (import.meta.env.VITE_WALRUS_NETWORK === 'mainnet' ? 'Mainnet' : 'Testnet') as 'Mainnet' | 'Testnet'
 
   useEffect(() => {
     loadWallets();
@@ -88,6 +89,11 @@ export function WalletPage() {
     }).format(amount);
   };
 
+  const formatToken = (amount: number, decimals: number = 3) => {
+    if (amount === undefined || amount === null) return '0';
+    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: decimals }).format(amount);
+  };
+
   const payerWallet = wallets.find((w) => w.role === 'payer');
   const payoutWallet = wallets.find((w) => w.role === 'payout');
 
@@ -102,6 +108,11 @@ const MAX_REQUEST_AMOUNT = 5000;
   return (
     <>
     <div className="space-y-6">
+      <div className="flex items-center gap-2 text-xs text-fog">
+        <Globe className="h-3.5 w-3.5" />
+        <span>Network:</span>
+        <span className={`rounded-full px-2 py-0.5 ${network === 'Testnet' ? 'bg-white/10 text-parchment' : 'bg-white/5 text-parchment'}`}>{network}</span>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -113,9 +124,10 @@ const MAX_REQUEST_AMOUNT = 5000;
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm text-fog mb-1">Payer Wallet</p>
-                  <h2 className="text-3xl font-semibold text-parchment">
-                    {formatCurrency(payerWallet?.onchain?.usdc || 0)}
-                  </h2>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-parchment"><span className="text-fog mr-2">SUI</span>{formatToken(payerWallet?.onchain?.sui || 0, 3)}</div>
+                    <div className="text-parchment"><span className="text-fog mr-2">WAL</span>{formatToken(payerWallet?.onchain?.wal || 0, 4)}</div>
+                  </div>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
                   <WalletIcon className="w-6 h-6" />
@@ -123,21 +135,15 @@ const MAX_REQUEST_AMOUNT = 5000;
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-fog">Available</span>
+                  <span className="text-fog">Available (USD)</span>
                   <span className="text-parchment font-medium">
                     {formatCurrency(payerWallet?.available || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-fog">Blocked</span>
+                  <span className="text-fog">Blocked (USD)</span>
                   <span className="text-ember font-medium">
                     {formatCurrency(payerWallet?.blocked || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-fog">On-chain USDC</span>
-                  <span className="text-parchment font-medium">
-                    {formatCurrency(payerWallet?.onchain?.usdc || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-white/10">
@@ -167,9 +173,10 @@ const MAX_REQUEST_AMOUNT = 5000;
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm text-fog mb-1">Payout Wallet</p>
-                  <h2 className="text-3xl font-semibold text-parchment">
-                    {formatCurrency(payoutWallet?.onchain?.usdc || 0)}
-                  </h2>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-parchment"><span className="text-fog mr-2">SUI</span>{formatToken(payoutWallet?.onchain?.sui || 0, 3)}</div>
+                    <div className="text-parchment"><span className="text-fog mr-2">WAL</span>{formatToken(payoutWallet?.onchain?.wal || 0, 4)}</div>
+                  </div>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-amber-400">
                   <TrendingDown className="w-6 h-6" />
@@ -177,21 +184,15 @@ const MAX_REQUEST_AMOUNT = 5000;
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-fog">Available</span>
+                  <span className="text-fog">Available (USD)</span>
                   <span className="text-parchment font-medium">
                     {formatCurrency(payoutWallet?.available || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-fog">Blocked</span>
+                  <span className="text-fog">Blocked (USD)</span>
                   <span className="text-fog font-medium">
                     {formatCurrency(payoutWallet?.blocked || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-fog">On-chain USDC</span>
-                  <span className="text-parchment font-medium">
-                    {formatCurrency(payoutWallet?.onchain?.usdc || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-white/10">
@@ -263,7 +264,7 @@ const MAX_REQUEST_AMOUNT = 5000;
 
       <Modal open={depositOpen} title="Add funds" onClose={() => setDepositOpen(false)}>
         <div className="space-y-4">
-          <p className="text-sm text-parchment font-medium">Fund your wallet using Circle's USDC faucet</p>
+          <p className="text-sm text-parchment font-medium">Fund your wallets on {network}</p>
 
           <div className="rounded-2xl border border-white/15 bg-[#121212] p-4">
             <div className="mb-3 text-xs uppercase tracking-wider text-fog/70">Your Payer Wallet Address</div>
@@ -284,11 +285,11 @@ const MAX_REQUEST_AMOUNT = 5000;
             <ol className="space-y-3 text-sm text-parchment/90">
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">1.</span>
-                <span>Visit <a href="https://faucet.sui.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-parchment font-medium">faucet.sui.io</a></span>
+                <span>Get SUI for gas: <a href="https://faucet.sui.io" target="_blank" rel="noopener noreferrer" className="underline hover:text-parchment font-medium">faucet.sui.io</a></span>
               </li>
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">2.</span>
-                <span>Select <strong>SUI Testnet</strong></span>
+                <span>Select <strong>Sui {network}</strong></span>
               </li>
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">3.</span>
@@ -296,7 +297,7 @@ const MAX_REQUEST_AMOUNT = 5000;
               </li>
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">4.</span>
-                <span>Request tokens (10 USDC per hour)</span>
+                <span>Acquire testnet WAL as needed (see Walrus docs)</span>
               </li>
             </ol>
           </div>

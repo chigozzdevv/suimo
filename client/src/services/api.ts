@@ -65,8 +65,10 @@ export interface Wallet {
   blocked: number;
   status: 'active' | 'frozen';
   address?: string;
-  onchain?: { sui?: number; usdc?: number };
+  onchain?: { sui?: number; wal?: number };
 }
+
+export interface PricesResponse { wal_usd: number | null }
 
 export interface Provider {
   _id: string;
@@ -81,6 +83,7 @@ export interface Resource {
   type: 'site' | 'dataset' | 'file';
   format: string;
   domain?: string;
+  category?: string;
   tags?: string[];
   summary?: string;
   sample_preview?: string;
@@ -91,6 +94,7 @@ export interface Resource {
   visibility?: 'public' | 'restricted';
   verified?: boolean;
   avg_latency_ms?: number;
+  image_url?: string;
   walrus_blob_id?: string;
   walrus_quilt_id?: string;
   walrus_blob_object_id?: string;
@@ -190,6 +194,7 @@ export interface CatalogResource {
   type: string;
   format: string;
   domain?: string;
+  category?: string;
   summary?: string;
   tags?: string[];
   sample_preview?: string;
@@ -198,6 +203,7 @@ export interface CatalogResource {
   verified?: boolean;
   updated_at?: string;
   size_bytes?: number;
+  image_url?: string;
 }
 
 export interface Connector {
@@ -282,6 +288,20 @@ export interface Domain {
   last_checked_at?: string;
 }
 
+export interface Market {
+  _id: string
+  slug: string
+  title: string
+  description?: string
+  tags?: string[]
+  updated_at?: string
+}
+
+export interface MarketDetail {
+  market: Market
+  resources: CatalogResource[]
+}
+
 class ApiService {
   private token: string | null = null;
 
@@ -305,7 +325,8 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeoutMs: number = Number(import.meta.env.VITE_API_TIMEOUT_MS || 60000)
   ): Promise<T> {
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -321,18 +342,25 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort('timeout'), Math.max(1000, timeoutMs));
+
     const fetchOptions: RequestInit = {
       ...options,
       headers,
       credentials: options.credentials ?? 'include',
+      signal: controller.signal,
     };
 
     let response: Response;
     try {
       response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
     } catch (err: any) {
+      clearTimeout(timer);
       throw new Error(err?.message || 'Unable to reach API server');
     }
+
+    clearTimeout(timer);
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}`;
@@ -484,9 +512,18 @@ class ApiService {
     });
   }
 
-  async getCatalogResources(limit = 24): Promise<CatalogResource[]> {
-    const res = await this.request<{ items: CatalogResource[] }>(`/catalog/resources?limit=${limit}`);
+  async getCatalogResources(params?: { limit?: number; category?: string; q?: string }): Promise<CatalogResource[]> {
+    const qs = new URLSearchParams();
+    const limit = params?.limit ?? 24;
+    qs.set('limit', String(limit));
+    if (params?.category) qs.set('category', params.category);
+    if (params?.q) qs.set('q', params.q);
+    const res = await this.request<{ items: CatalogResource[] }>(`/catalog/resources?${qs.toString()}`);
     return res.items;
+  }
+
+  async getCatalogResource(id: string): Promise<CatalogResource> {
+    return this.request<CatalogResource>(`/catalog/resources/${encodeURIComponent(id)}`);
   }
 
   async createResource(data: Partial<Resource>): Promise<Resource> {
@@ -584,23 +621,36 @@ class ApiService {
   
 
   async uploadEncryptedToWalrus(file: File): Promise<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number; cipher_meta: { algo: string; size_bytes: number } }> {
-    const { SealClient, DemType } = await import('@mysten/seal');
+    const sealMod: any = await import('@mysten/seal');
+    const { AesGcm256, encrypt: sealEncrypt, retrieveKeyServers } = sealMod;
     const { SuiClient, getFullnodeUrl } = await import('@mysten/sui/client');
 
     const network = (import.meta.env.VITE_WALRUS_NETWORK === 'mainnet' ? 'mainnet' : 'testnet') as 'mainnet' | 'testnet';
     const policyPackage = (import.meta.env.VITE_SEAL_POLICY_PACKAGE || '').toString();
     if (!policyPackage) throw new Error('Missing VITE_SEAL_POLICY_PACKAGE');
-    const pkg = policyPackage.startsWith('0x') ? policyPackage : `0x${policyPackage}`;
+    const hexToBytes = (hex: string) => {
+      const clean = hex.replace(/^0x/, '');
+      const arr: number[] = [];
+      for (let i = 0; i < clean.length; i += 2) arr.push(parseInt(clean.slice(i, i + 2), 16));
+      return new Uint8Array(arr);
+    };
+    const pkgBytes = hexToBytes(policyPackage);
     const sui = new SuiClient({ url: import.meta.env.VITE_SUI_RPC_URL || getFullnodeUrl(network) });
-    const serverList = (import.meta.env.VITE_SEAL_KEY_SERVERS || '').split(',').map((s: string) => s.trim()).filter(Boolean);
-    if (!serverList.length) throw new Error('Missing VITE_SEAL_KEY_SERVERS');
-    const serverConfigs = serverList.map((objectId: string) => ({ objectId, weight: 1 }));
-    const seal = new SealClient({ suiClient: sui as any, serverConfigs, verifyKeyServers: true });
+
+    let serverList: string[] = [];
+    try {
+      const r = await this.getSealKeyServers();
+      serverList = Array.isArray(r) ? r : [];
+    } catch {}
+    if (!serverList.length) throw new Error('SEAL_KEY_SERVERS_UNAVAILABLE');
+
+    const keyServers = await retrieveKeyServers({ objectIds: serverList.map(hexToBytes), client: sui as any });
 
     const idBytes = crypto.getRandomValues(new Uint8Array(32));
-    const toHex = (u8: Uint8Array) => '0x' + Array.from(u8).map((b) => b.toString(16).padStart(2, '0')).join('');
     const data = new Uint8Array(await file.arrayBuffer());
-    const { encryptedObject } = await seal.encrypt({ demType: DemType.AesGcm256, threshold: Math.min(3, serverConfigs.length), packageId: pkg, id: toHex(idBytes), data });
+    const input = new AesGcm256(data, new Uint8Array());
+    const { encryptedObject } = await sealEncrypt({ keyServers, threshold: Math.min(3, keyServers.length), packageId: pkgBytes, id: idBytes, encryptionInput: input });
+
     const toBase64 = (u8: Uint8Array) => {
       let binary = '';
       const chunk = 0x8000;
@@ -623,6 +673,29 @@ class ApiService {
     return this.request(`/domains/${encodeURIComponent(domain)}`, {
       method: 'DELETE',
     });
+  }
+
+  async getMarkets(limit = 24): Promise<Market[]> {
+    const res = await this.request<{ items: Market[] }>(`/markets?limit=${limit}`)
+    return res.items
+  }
+
+  async getMarket(slug: string): Promise<MarketDetail> {
+    return this.request<MarketDetail>(`/markets/${encodeURIComponent(slug)}`)
+  }
+
+  async getMarketCategories(): Promise<string[]> {
+    const res = await this.request<{ categories: string[] }>(`/markets/categories`)
+    return res.categories
+  }
+
+  async getPrices(): Promise<PricesResponse> {
+    return this.request<PricesResponse>(`/prices`)
+  }
+
+  async getSealKeyServers(): Promise<string[]> {
+    const res = await this.request<{ objectIds: string[] }>(`/seal/key-servers`)
+    return Array.isArray(res.objectIds) ? res.objectIds : []
   }
 }
 

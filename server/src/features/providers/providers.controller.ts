@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { siteVerifyInput, siteVerifyCheckInput, uploadDatasetInput } from '@/features/providers/providers.schema.js';
 import { getOrCreateProvider, getProviderByUserId, getProviderOverview, getProviderRequests, getProviderEarnings, verifySiteInit, verifySiteCheck, getProviderDomains, removeProviderDomain } from '@/features/providers/providers.service.js';
-import { putWalrusBlob } from '@/services/walrus/walrus.service.js';
+import { putWalrusBlobAsProvider } from '@/services/walrus/walrus.service.js';
 
 export async function createOrGetProviderController(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as any).userId as string;
@@ -75,8 +75,18 @@ export async function deleteDomainController(req: FastifyRequest, reply: Fastify
 }
 
 export async function uploadDatasetController(req: FastifyRequest, reply: FastifyReply) {
+  const userId = (req as any).userId as string;
   const body = uploadDatasetInput.parse(req.body);
   const bytes = Buffer.from(body.encrypted_object_b64, 'base64');
-  const res = await putWalrusBlob(new Uint8Array(bytes), { deletable: body.deletable ?? true, epochs: body.epochs ?? 3 });
-  return reply.send({ walrus_blob_id: res.id, walrus_blob_object_id: res.objectId, size_bytes: res.size });
+  try {
+    const res = await putWalrusBlobAsProvider(userId, new Uint8Array(bytes), { deletable: body.deletable ?? true, epochs: body.epochs ?? 3 });
+    return reply.send({ walrus_blob_id: res.id, walrus_blob_object_id: res.objectId, size_bytes: res.size });
+  } catch (e: any) {
+    const msg = String(e?.message || 'UPLOAD_FAILED');
+    if (msg.includes('PROVIDER_WALLET_MISSING')) return reply.code(400).send({ error: 'PROVIDER_WALLET_MISSING' });
+    if (msg.includes('INSUFFICIENT') || msg.includes('Not enough coins') || msg.includes('INSUFFICIENT_BALANCE')) {
+      return reply.code(402).send({ error: 'INSUFFICIENT_WAL_OR_SUI' });
+    }
+    throw e;
+  }
 }

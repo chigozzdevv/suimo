@@ -3,6 +3,7 @@ import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
 import { Transaction } from '@mysten/sui/transactions'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { fromB64 } from '@mysten/sui/utils'
+import { decodeSuiPrivateKey } from '@mysten/sui/cryptography'
 
 function client() {
   const env = loadEnv()
@@ -12,9 +13,20 @@ function client() {
 
 function platformKeypair() {
   const env = loadEnv()
-  const b64 = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY
-  if (!b64) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing')
-  return Ed25519Keypair.fromSecretKey(fromB64(b64))
+  const raw = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY
+  if (!raw) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing')
+
+  try {
+    if (raw.startsWith('suiprivkey')) {
+      const { secretKey } = decodeSuiPrivateKey(raw)
+      return Ed25519Keypair.fromSecretKey(secretKey)
+    }
+    const cleaned = raw.includes(':') ? raw.split(':').pop()! : raw
+    const buf = cleaned.startsWith('0x') ? new Uint8Array(Buffer.from(cleaned.slice(2), 'hex')) : fromB64(cleaned)
+    return Ed25519Keypair.fromSecretKey(buf)
+  } catch (e) {
+    throw new Error('Invalid SUI_PLATFORM_PRIVATE_KEY format')
+  }
 }
 
 function toAtomic(amountUi: string | number, decimals: number): bigint {
@@ -28,22 +40,22 @@ function toAtomic(amountUi: string | number, decimals: number): bigint {
 export async function getBalances(address: string) {
   const c = client()
   const suiBal = await c.getBalance({ owner: address })
-  const usdcType = process.env.SUI_USDC_TYPE || loadEnv().SUI_USDC_TYPE
-  let usdc = 0
-  if (usdcType) {
-    const dec = Number(process.env.SUI_USDC_DECIMALS || loadEnv().SUI_USDC_DECIMALS || 6)
-    const b = await c.getBalance({ owner: address, coinType: usdcType })
-    usdc = Number(b.totalBalance || '0') / Math.pow(10, dec)
+  const walType = process.env.WAL_COIN_TYPE || loadEnv().WAL_COIN_TYPE
+  let wal = 0
+  if (walType) {
+    const dec = Number(process.env.WAL_DECIMALS || loadEnv().WAL_DECIMALS || 9)
+    const b = await c.getBalance({ owner: address, coinType: walType })
+    wal = Number(b.totalBalance || '0') / Math.pow(10, dec)
   }
   const sui = Number(suiBal.totalBalance || '0') / 1e9
-  return { sui, usdc }
+  return { sui, wal }
 }
 
-export async function transferUsdc(toAddress: string, amountUi: number | string): Promise<string> {
+export async function transferWal(toAddress: string, amountUi: number | string): Promise<string> {
   const env = loadEnv()
-  const coinType = process.env.SUI_USDC_TYPE || env.SUI_USDC_TYPE
-  const decimals = Number(process.env.SUI_USDC_DECIMALS || env.SUI_USDC_DECIMALS || 6)
-  if (!coinType) throw new Error('SUI_USDC_TYPE missing')
+  const coinType = process.env.WAL_COIN_TYPE || env.WAL_COIN_TYPE
+  const decimals = Number(process.env.WAL_DECIMALS || env.WAL_DECIMALS || 9)
+  if (!coinType) throw new Error('WAL_COIN_TYPE missing')
   const kp = platformKeypair()
   const c = client()
   const owner = kp.getPublicKey().toSuiAddress()
@@ -86,10 +98,10 @@ export async function fundAgentOnSignup(userId: string) {
   if (!payerKey?.public_key) return
   const to = payerKey.public_key
   const suiAmt = Number(process.env.FUND_SUI_ON_SIGNUP || env.FUND_SUI_ON_SIGNUP || 0.02)
-  const usdcAmt = Number(process.env.FUND_USDC_ON_SIGNUP || env.FUND_USDC_ON_SIGNUP || 0)
   if (suiAmt > 0) await topUpSui(to, suiAmt)
-  if (usdcAmt > 0) {
-    await transferUsdc(to, usdcAmt)
-    await creditWallet(userId, 'payer', usdcAmt, 'signup_bonus', 'initial_airdrop')
+  const walAmt = Number(process.env.FUND_WAL_ON_SIGNUP || env.FUND_WAL_ON_SIGNUP || 0)
+  if (walAmt > 0) {
+    await transferWal(to, walAmt)
+    await creditWallet(userId, 'payer', walAmt, 'signup_bonus', 'initial_airdrop_wal')
   }
 }

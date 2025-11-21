@@ -51,7 +51,7 @@ export function ReceiptsPage() {
                   <span>{new Date(receipt.ts).toLocaleString()}</span>
                 </div>
                 <p className="mt-2 text-parchment">Request {receipt.request_id}</p>
-                <p>Paid Total: {receipt.json?.paid_total ?? 0} USDC</p>
+                <p>Paid Total: {receipt.json?.paid_total ?? 0} USD</p>
                 {receipt.json?.provider_onchain_tx && (
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-xs text-fog/70">Provider Tx:</span>

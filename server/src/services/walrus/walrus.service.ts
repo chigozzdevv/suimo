@@ -3,6 +3,9 @@ import { loadEnv } from '@/config/env.js';
 import { WalrusClient } from '@mysten/walrus';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { fromB64 } from '@mysten/sui/utils';
+import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
+import { findWalletKey } from '@/features/wallets/keys.model.js';
+import { decryptSecret } from '@/services/crypto/keystore.js';
 
 function getClients() {
   const env = loadEnv();
@@ -17,14 +20,35 @@ function getClients() {
 
 function platformSigner(): Ed25519Keypair {
   const env = loadEnv();
-  const b64 = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
-  if (!b64) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing');
-  return Ed25519Keypair.fromSecretKey(fromB64(b64));
+  const raw = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
+  if (!raw) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing');
+  if (raw.startsWith('suiprivkey')) {
+    const { secretKey } = decodeSuiPrivateKey(raw);
+    return Ed25519Keypair.fromSecretKey(secretKey);
+  }
+  const cleaned = raw.includes(':') ? raw.split(':').pop()! : raw;
+  const buf = cleaned.startsWith('0x') ? new Uint8Array(Buffer.from(cleaned.slice(2), 'hex')) : fromB64(cleaned);
+  return Ed25519Keypair.fromSecretKey(buf);
+}
+
+async function providerSigner(userId: string, role: 'payer' | 'payout' = 'payer'): Promise<Ed25519Keypair> {
+  const key = await findWalletKey(userId, role, 'sui');
+  if (!key) throw new Error('PROVIDER_WALLET_MISSING');
+  const secret = decryptSecret(key.enc);
+  return Ed25519Keypair.fromSecretKey(new Uint8Array(secret));
 }
 
 export async function putWalrusBlob(data: Uint8Array, opts?: { deletable?: boolean; epochs?: number; owner?: string }): Promise<{ id: string; objectId: string; size: number }>{
   const { walrus } = getClients();
   const signer = platformSigner();
+  const res = await walrus.writeBlob({ blob: data, deletable: opts?.deletable ?? true, epochs: opts?.epochs ?? 3, signer: signer as any, owner: opts?.owner });
+  const objectId = res.blobObject.id.id as string;
+  return { id: res.blobId, objectId, size: data.byteLength };
+}
+
+export async function putWalrusBlobAsProvider(userId: string, data: Uint8Array, opts?: { deletable?: boolean; epochs?: number; owner?: string }): Promise<{ id: string; objectId: string; size: number }>{
+  const { walrus } = getClients();
+  const signer = await providerSigner(userId, 'payer');
   const res = await walrus.writeBlob({ blob: data, deletable: opts?.deletable ?? true, epochs: opts?.epochs ?? 3, signer: signer as any, owner: opts?.owner });
   const objectId = res.blobObject.id.id as string;
   return { id: res.blobId, objectId, size: data.byteLength };

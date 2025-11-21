@@ -6,7 +6,11 @@ import { deleteWalrusBlobObject } from '@/services/walrus/walrus.service.js';
 import { listResourcesByProvider, createResourceForProvider, listPublicResources } from '@/features/resources/resources.service.js';
 import { findResourceById } from '@/features/resources/resources.model.js';
 
-const listQuery = z.object({ limit: z.coerce.number().int().positive().max(100).default(50) }).partial();
+const listQuery = z.object({
+  limit: z.coerce.number().int().positive().max(100).default(50),
+  q: z.string().min(1).optional(),
+  category: z.string().min(1).optional(),
+}).partial();
 
 async function getProviderIdByUserId(userId: string) {
   const db = await getDb();
@@ -25,9 +29,20 @@ export async function listResourcesController(req: FastifyRequest, reply: Fastif
 }
 
 export async function listCatalogResourcesController(req: FastifyRequest, reply: FastifyReply) {
-  const q = listQuery.safeParse(req.query);
-  const limit = q.success && q.data.limit ? q.data.limit : 24;
-  const items = await listPublicResources(limit);
+  const parsed = listQuery.safeParse(req.query);
+  const limit = parsed.success && parsed.data.limit ? parsed.data.limit : 24;
+  const category = parsed.success ? parsed.data.category : undefined;
+  const search = parsed.success ? parsed.data.q : undefined;
+  let items: any[] = [];
+  if (search && search.trim().length > 0) {
+    const { searchPublicResources } = await import('@/features/resources/resources.service.js');
+    items = await searchPublicResources(search, { category, limit });
+  } else if (category) {
+    const { listPublicResourcesWithCategory } = await import('@/features/resources/resources.service.js');
+    items = await listPublicResourcesWithCategory(category, limit);
+  } else {
+    items = await listPublicResources(limit);
+  }
   return reply.send({ items });
 }
 
@@ -36,6 +51,31 @@ export async function getResourceController(req: FastifyRequest, reply: FastifyR
   const r = await findResourceById(id);
   if (!r) return reply.code(404).send({ error: 'RESOURCE_NOT_FOUND' });
   return reply.send(r);
+}
+
+export async function getCatalogResourceController(req: FastifyRequest, reply: FastifyReply) {
+  const id = String((req.params as any).id);
+  const r = await findResourceById(id);
+  if (!r) return reply.code(404).send({ error: 'RESOURCE_NOT_FOUND' });
+  if (r.visibility && r.visibility !== 'public') return reply.code(403).send({ error: 'FORBIDDEN' });
+  const safe = {
+    _id: r._id,
+    provider_id: r.provider_id,
+    title: r.title,
+    type: r.type,
+    format: r.format,
+    domain: r.domain,
+    category: r.category,
+    summary: r.summary,
+    sample_preview: r.sample_preview,
+    tags: r.tags,
+    price_per_kb: r.price_per_kb,
+    price_flat: r.price_flat,
+    verified: r.verified,
+    updated_at: r.updated_at,
+    image_url: (r as any).image_url,
+  };
+  return reply.send(safe);
 }
 
 // Note: POST /resources already exists in providers.routes. If we later move it here, reuse createResourceInput.

@@ -6,6 +6,7 @@ const createResourceBase = z.object({
   format: z.string(),
   domain: z.string().optional(),
   path: z.string().optional(),
+  category: z.string().max(64).optional(),
   tags: z.array(z.string()).optional(),
   summary: z.string().optional(),
   schema: z.array(z.string()).optional(),

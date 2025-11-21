@@ -14,6 +14,7 @@ type ResourceFormState = {
   format: string;
   domain: string;
   path: string;
+  category: string;
   summary: string;
   samplePreview: string;
   tags: string;
@@ -32,6 +33,7 @@ const defaultResourceForm: ResourceFormState = {
   format: 'html',
   domain: '',
   path: '/',
+  category: '',
   summary: '',
   samplePreview: '',
   tags: '',
@@ -59,6 +61,9 @@ export function ResourcesPage() {
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const catRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [resourceModalOpen, setResourceModalOpen] = useState(false);
@@ -66,6 +71,7 @@ export function ResourcesPage() {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [walUsd, setWalUsd] = useState<number | null>(null);
 
   useEffect(() => {
     loadPage();
@@ -74,14 +80,18 @@ export function ResourcesPage() {
   const loadPage = async () => {
     setIsLoading(true);
     try {
-      const [resList, connectorList, domainList] = await Promise.all([
+      const [resList, connectorList, domainList, categories, prices] = await Promise.all([
         api.getProviderResources(100),
         api.getConnectors(),
-        api.getDomains()
+        api.getDomains(),
+        api.getMarketCategories(),
+        api.getPrices().catch(() => ({ wal_usd: null })),
       ]);
       setResources(resList);
       setConnectors(connectorList);
       setDomains(domainList);
+      setCategoryOptions(categories || []);
+      setWalUsd(typeof prices.wal_usd === 'number' ? prices.wal_usd : null);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load resources');
@@ -90,12 +100,21 @@ export function ResourcesPage() {
     }
   };
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (!catRef.current) return;
+      if (!catRef.current.contains(e.target as Node)) setCategoryOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   const handleResourceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitting(true);
     setError('');
 
-    if (resourceForm.type === 'file' && !resourceForm.file) {
+    if ((resourceForm.type === 'file' || resourceForm.type === 'dataset') && !resourceForm.file) {
       setError('Please select a file to upload');
       setFormSubmitting(false);
       return;
@@ -123,7 +142,7 @@ export function ResourcesPage() {
 
     try {
       let walrusUpload: { walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number; cipher_meta: { algo: string; size_bytes: number } } | undefined;
-      if (resourceForm.type === 'file' && resourceForm.file) {
+      if ((resourceForm.type === 'file' || resourceForm.type === 'dataset') && resourceForm.file) {
         setUploadingFile(true);
         try {
           walrusUpload = await api.uploadEncryptedToWalrus(resourceForm.file);
@@ -132,12 +151,21 @@ export function ResourcesPage() {
         }
       }
 
+      const slugify = (s: unknown) => String(s ?? '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-_]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$|_/g, (m) => m === '_' ? '-' : '');
+
       const payload: Partial<Resource> = {
         title: resourceForm.title,
         type: resourceForm.type,
         format: resourceForm.format,
         domain: resourceForm.domain || undefined,
         path: resourceForm.path || undefined,
+        category: resourceForm.category ? slugify(resourceForm.category) : undefined,
         summary: resourceForm.summary || undefined,
         sample_preview: resourceForm.samplePreview || undefined,
         tags: resourceForm.tags
@@ -403,7 +431,7 @@ export function ResourcesPage() {
               />
             </Field>
           </div>
-          {resourceForm.type === 'file' && (
+          {(resourceForm.type === 'file' || resourceForm.type === 'dataset') && (
             <Field label="Upload File">
               <div className="flex items-center gap-3">
                 <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-parchment hover:border-white/40">
@@ -419,19 +447,69 @@ export function ResourcesPage() {
               </div>
             </Field>
           )}
+          <Field label="Category">
+            <div className="relative" ref={catRef}>
+              <input
+                value={resourceForm.category}
+                onChange={(e) => {
+                  setResourceForm({ ...resourceForm, category: e.target.value });
+                  setCategoryOpen(true);
+                }}
+                onFocus={() => setCategoryOpen(true)}
+                placeholder="Search or enter a new category"
+                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+              />
+              {categoryOpen && (
+                <div className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-white/10 bg-[#121212]/95 p-1 shadow-2xl backdrop-blur">
+                  {resourceForm.category && !categoryOptions.some((c) => String(c).toLowerCase() === String(resourceForm.category).toLowerCase()) && (
+                    <button
+                      type="button"
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-parchment hover:bg-white/10"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setCategoryOpen(false);
+                      }}
+                    >
+                      Use “{resourceForm.category}”
+                    </button>
+                  )}
+                  {categoryOptions
+                    .filter((c) => !resourceForm.category || String(c).toLowerCase().includes(String(resourceForm.category).toLowerCase()))
+                    .slice(0, 8)
+                    .map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        className="w-full rounded-xl px-3 py-2 text-left text-sm text-parchment hover:bg-white/10"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setResourceForm({ ...resourceForm, category: c });
+                          setCategoryOpen(false);
+                        }}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  {categoryOptions.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-fog">No suggestions yet</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Field>
           {resourceForm.type === 'site' && (
             <>
               <div className="grid gap-4 md:grid-cols-2">
                 <Field label="Domain">
                   {domains.filter((d) => d.status === 'verified').length === 0 ? (
-                    <div className="rounded-lg border border-ember/30 bg-ember/10 px-3 py-2 text-sm">
-                      <p className="text-ember">No verified domains.</p>
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+                      <p className="text-parchment">You need a verified domain to list site resources.</p>
                       <button
                         type="button"
                         onClick={() => navigate('/dashboard/provider/domains')}
-                        className="text-parchment hover:underline"
+                        className="mt-1 text-parchment hover:underline"
                       >
-                        Verify a domain first
+                        Open Domains to verify
                       </button>
                     </div>
                   ) : (
@@ -499,73 +577,121 @@ export function ResourcesPage() {
               className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
             />
           </Field>
-          <div className="space-y-4">
-            {resourceForm.type === 'site' && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Price per KB (USD)">
+          <div className="space-y-4 mt-8">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-medium text-parchment">Pricing</p>
+              <p className="text-xs text-fog mb-3">Set how this resource is billed.</p>
+              {resourceForm.type === 'site' ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-fog">Price per KB (USD)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      value={resourceForm.pricePerKb}
+                      onChange={(e) => setResourceForm({ ...resourceForm, pricePerKb: e.target.value })}
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+                      placeholder="e.g. 0.0012"
+                    />
+                    {walUsd && resourceForm.pricePerKb && Number(resourceForm.pricePerKb) > 0 && (
+                      <div className="mt-1 text-xs text-fog">≈ {(Number(resourceForm.pricePerKb) / walUsd).toFixed(6)} WAL/KB</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">Flat price (USD)</label>
+                      <label className="flex items-center gap-2 text-xs text-fog">
+                        <input
+                          type="checkbox"
+                          checked={resourceForm.flatFeeEnabled}
+                          onChange={(e) =>
+                            setResourceForm({
+                              ...resourceForm,
+                              flatFeeEnabled: e.target.checked,
+                              priceFlat: e.target.checked ? resourceForm.priceFlat : '',
+                            })
+                          }
+                        />
+                        Include base flat fee
+                      </label>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={resourceForm.priceFlat}
+                      onChange={(e) => setResourceForm({ ...resourceForm, priceFlat: e.target.value })}
+                      className={`w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none ${
+                        resourceForm.flatFeeEnabled ? '' : 'opacity-50 pointer-events-none'
+                      }`}
+                      placeholder="e.g. 0.50"
+                      disabled={!resourceForm.flatFeeEnabled}
+                    />
+                    {walUsd && resourceForm.flatFeeEnabled && resourceForm.priceFlat && Number(resourceForm.priceFlat) > 0 && (
+                      <div className="mt-1 text-xs text-fog">≈ {(Number(resourceForm.priceFlat) / walUsd).toFixed(4)} WAL</div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-fog">Flat price (USD)</label>
                   <input
                     type="number"
                     min="0"
-                    step="0.0001"
-                    value={resourceForm.pricePerKb}
-                    onChange={(e) => setResourceForm({ ...resourceForm, pricePerKb: e.target.value })}
+                    step="0.01"
+                    value={resourceForm.priceFlat}
+                    onChange={(e) => setResourceForm({ ...resourceForm, priceFlat: e.target.value })}
                     className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+                    placeholder="e.g. 4.99"
                   />
-                </Field>
-                <div className="flex flex-col justify-end">
-                  <label className="flex items-center gap-2 text-sm text-fog">
-                    <input
-                      type="checkbox"
-                      checked={resourceForm.flatFeeEnabled}
-                      onChange={(e) =>
-                        setResourceForm({
-                          ...resourceForm,
-                          flatFeeEnabled: e.target.checked,
-                          priceFlat: e.target.checked ? resourceForm.priceFlat : '',
-                        })
-                      }
-                    />
-                    <span>Include base flat fee</span>
-                  </label>
+                  {walUsd && resourceForm.priceFlat && Number(resourceForm.priceFlat) > 0 && (
+                    <div className="mt-1 text-xs text-fog">≈ {(Number(resourceForm.priceFlat) / walUsd).toFixed(4)} WAL</div>
+                  )}
                 </div>
-              </div>
-            )}
-            {(resourceForm.type !== 'site' || resourceForm.flatFeeEnabled) && (
-              <Field label="Flat price (USD)">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={resourceForm.priceFlat}
-                  onChange={(e) => setResourceForm({ ...resourceForm, priceFlat: e.target.value })}
-                  className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
-                />
-              </Field>
-            )}
+              )}
+            </div>
           </div>
-          <Field label="Modes">
-            <div className="flex gap-3">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 mt-6">
+            <p className="text-sm font-medium text-parchment">Modes</p>
+            <p className="text-xs text-fog mb-3">Raw returns original content as-is; Summary returns a concise provider-generated overview.</p>
+            <div className="flex gap-4">
               {(['raw', 'summary'] as const).map((mode) => (
-                <label key={mode} className="flex items-center gap-2 text-sm text-fog">
+                <label key={mode} className="flex items-center gap-2 text-sm text-fog capitalize">
                   <input
                     type="checkbox"
                     checked={resourceForm.modes[mode]}
                     onChange={(e) =>
                       setResourceForm({ ...resourceForm, modes: { ...resourceForm.modes, [mode]: e.target.checked } })
                     }
+                    className="h-4 w-4 rounded border-white/10 bg-white/5"
                   />
                   {mode}
                 </label>
               ))}
             </div>
-          </Field>
+          </div>
           <Field label="Connector">
-            <FancySelect
-              value={resourceForm.connectorId}
-              onChange={(val) => setResourceForm({ ...resourceForm, connectorId: val })}
-              placeholder="Select connector"
-              options={connectors.map((connector) => ({ value: connector.id, label: connector.type }))}
-            />
+            {connectors.length === 0 ? (
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+                <p className="text-parchment">No connectors found.</p>
+                <p className="text-xs text-fog">Add a connector to authenticate private resources.</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/provider/connectors')}
+                  className="mt-1 text-parchment hover:underline"
+                >
+                  Open Connectors
+                </button>
+              </div>
+            ) : (
+              <FancySelect
+                value={resourceForm.connectorId}
+                onChange={(val) => setResourceForm({ ...resourceForm, connectorId: val })}
+                placeholder="Select connector"
+                options={connectors.map((connector) => ({ value: connector.id, label: connector.type }))}
+              />
+            )}
           </Field>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => setResourceModalOpen(false)} disabled={formSubmitting}>

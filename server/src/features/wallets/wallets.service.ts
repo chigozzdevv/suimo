@@ -40,8 +40,8 @@ export async function getWallets(userId: string) {
   const payout = await getOrInitWallet(userId, 'payout');
   const payerKey = (await findWalletKey(userId, 'payer')) || (await ensureSuiKey(userId, 'payer'));
   const payoutKey = (await findWalletKey(userId, 'payout')) || (await ensureSuiKey(userId, 'payout'));
-  const payerOnchain = payerKey?.public_key ? await getBalances(payerKey.public_key) : { sui: 0, usdc: 0 };
-  const payoutOnchain = payoutKey?.public_key ? await getBalances(payoutKey.public_key) : { sui: 0, usdc: 0 };
+  const payerOnchain = payerKey?.public_key ? await getBalances(payerKey.public_key) : { sui: 0, wal: 0 };
+  const payoutOnchain = payoutKey?.public_key ? await getBalances(payoutKey.public_key) : { sui: 0, wal: 0 };
   return {
     payer: { ...payer, address: payerKey?.public_key, onchain: payerOnchain },
     payout: { ...payout, address: payoutKey?.public_key, onchain: payoutOnchain },

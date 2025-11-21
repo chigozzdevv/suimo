@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { LandingPage } from '@/pages/landing'
+import { MarketsPage } from '@/pages/markets'
+import { MarketDetailPage } from '@/pages/markets/detail'
+import { ResourceDetailPage } from '@/pages/resources/detail'
 import { AuthPage } from '@/pages/auth'
 import { GetStartedPage } from '@/pages/landing/get-started'
 import { Dashboard } from '@/pages/dashboard'
@@ -90,6 +93,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={hashAuth ? <AuthPage /> : <LandingPage />} />
       <Route path="/auth" element={<AuthScreen />} />
+      <Route path="/markets" element={<MarketsPage />} />
+      <Route path="/markets/:slug" element={<MarketDetailPage />} />
+      <Route path="/resources/:id" element={<ResourceDetailPage />} />
       <Route path="/get-started" element={<GetStartedPage />} />
       <Route path="/app/*" element={<ProtectedRoute />} />
       <Route path="*" element={<Navigate to={isAuthenticated ? '/app' : '/'} replace />} />

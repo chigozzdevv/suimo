@@ -8,6 +8,7 @@ export type ResourceDoc = {
   format: 'csv' | 'pdf' | 'json' | 'html' | string;
   domain?: string;
   path?: string;
+  category?: string;
   tags?: string[];
   summary?: string;
   sample_preview?: string;
@@ -20,6 +21,7 @@ export type ResourceDoc = {
   policy?: { visibility?: 'public' | 'restricted'; allow?: string[]; deny_paths?: string[]; modes?: Array<'raw' | 'summary'> };
   updated_at?: string;
   connector_id?: string;
+  image_url?: string;
   walrus_blob_id?: string;
   walrus_quilt_id?: string;
   walrus_blob_object_id?: string;

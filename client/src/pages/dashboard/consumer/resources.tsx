@@ -39,12 +39,13 @@ export function ResourcesPage() {
     let filtered = resources;
 
     if (searchQuery) {
-      filtered = filtered.filter(
-        (r) =>
-          r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((r) => {
+        const title = String(r.title || '').toLowerCase();
+        const sum = String(r.summary || '').toLowerCase();
+        const tagMatch = Array.isArray(r.tags) && r.tags.some((t) => String(t).toLowerCase().includes(q));
+        return title.includes(q) || sum.includes(q) || tagMatch;
+      });
     }
 
     if (filterType !== 'all') {

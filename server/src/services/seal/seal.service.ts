@@ -2,7 +2,7 @@ import { getAllowlistedKeyServers, retrieveKeyServers, KeyStore, SessionKey, enc
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { toSerializedSignature } from '@mysten/sui/cryptography';
+import { toSerializedSignature, decodeSuiPrivateKey } from '@mysten/sui/cryptography';
 import { fromB64 } from '@mysten/sui/utils';
 import { loadEnv } from '@/config/env.js';
 
@@ -42,9 +42,17 @@ export async function sealDecryptForAccess(cipher: { chunks: string[] }, _policy
   const ttlMin = 10;
   const session = new SessionKey(packageId, ttlMin);
   const msg = session.getPersonalMessage();
-  const b64 = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
-  if (!b64) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing');
-  const kp = Ed25519Keypair.fromSecretKey(fromB64(b64));
+  const raw = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
+  if (!raw) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing');
+  let kp: Ed25519Keypair;
+  if (raw.startsWith('suiprivkey')) {
+    const { secretKey } = decodeSuiPrivateKey(raw);
+    kp = Ed25519Keypair.fromSecretKey(secretKey);
+  } else {
+    const cleaned = raw.includes(':') ? raw.split(':').pop()! : raw;
+    const buf = cleaned.startsWith('0x') ? new Uint8Array(Buffer.from(cleaned.slice(2), 'hex')) : fromB64(cleaned);
+    kp = Ed25519Keypair.fromSecretKey(buf);
+  }
   const sigBytes = await kp.sign(msg);
   const sig = toSerializedSignature({ signatureScheme: 'ED25519', signature: new Uint8Array(sigBytes), publicKey: kp.getPublicKey() });
   session.setPersonalMessageSignature(sig);

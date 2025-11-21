@@ -10,7 +10,7 @@ import { findConnectorById } from '@/features/connectors/connectors.model.js';
 import { fetchViaConnector } from '@/features/connectors/connectors.service.js';
 import { checkSpendingCaps } from '@/features/caps/caps.service.js';
 import { createAgent } from '@/features/agents/agents.service.js';
-import { transferUsdc } from '@/services/sui/sui.service.js';
+import { transferWal } from '@/services/sui/sui.service.js';
 import { findWalletKey } from '@/features/wallets/keys.model.js';
 
 export type PendingReceipt = { requestId: string; payload: Record<string, any> };
@@ -298,7 +298,7 @@ export async function fetchService(
         if (!key?.public_key) {
           throw new Error('PROVIDER_PAYOUT_ADDRESS_MISSING');
         }
-        providerSettlementTx = await transferUsdc(key.public_key, providerShare);
+        providerSettlementTx = await transferWal(key.public_key, providerShare);
       }
     }
 

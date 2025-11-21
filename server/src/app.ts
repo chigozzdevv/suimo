@@ -15,10 +15,13 @@ import { registerAnalyticsRoutes } from '@/features/analytics/analytics.routes.j
 import { registerResourcesRoutes } from '@/features/resources/resources.routes.js';
 import { registerReceiptsRoutes } from '@/features/receipts/receipts.routes.js';
 import { registerConnectorsRoutes } from '@/features/connectors/connectors.routes.js';
+import { registerMarketsRoutes } from '@/features/markets/markets.routes.js';
+import { registerSealRoutes } from '@/features/seal/seal.routes.js';
+import { registerPricesRoutes } from '@/features/prices/prices.routes.js';
  
 
 export function buildApp() {
-  const app = Fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
+  const app = Fastify({ logger: true, bodyLimit: 50 * 1024 * 1024 }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -39,6 +42,9 @@ export function buildApp() {
   app.register(registerResourcesRoutes, { prefix: '/' });
   app.register(registerReceiptsRoutes, { prefix: '/' });
   app.register(registerConnectorsRoutes, { prefix: '/' });
+  app.register(registerMarketsRoutes, { prefix: '/' });
+  app.register(registerPricesRoutes, { prefix: '/' });
+  app.register(registerSealRoutes, { prefix: '/' });
   app.register(registerWalletsRoutes, { prefix: '/' });
   app.register(registerCapsRoutes, { prefix: '/' });
   app.register(registerAnalyticsRoutes, { prefix: '/' });

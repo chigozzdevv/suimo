@@ -15,8 +15,8 @@ const getErrorMessage = (err: unknown, fallback: string) => {
   return fallback;
 };
 
-const sanitizeDomain = (value: string) => {
-  const trimmed = value.trim().toLowerCase();
+const sanitizeDomain = (value: unknown) => {
+  const trimmed = String(value ?? '').trim().toLowerCase();
   if (!trimmed) return '';
   const withoutProtocol = trimmed.replace(/^https?:\/\//, '');
   const withoutPathOrQuery = withoutProtocol.split(/[/?#]/)[0];
