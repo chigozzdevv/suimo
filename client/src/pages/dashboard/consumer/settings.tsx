@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { api } from '@/services/api'
@@ -16,6 +16,14 @@ export function ConsumerSettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changeStatus, setChangeStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
   const [changeLoading, setChangeLoading] = useState(false)
+
+  const [pinStatus, setPinStatus] = useState<{ has_pin: boolean; locked_until?: string; remaining_attempts?: number } | null>(null)
+  const [pinMsg, setPinMsg] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
+  const [currPin, setCurrPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+
+  useEffect(() => { (async () => { try { const s = await api.getPinStatus(); setPinStatus(s) } catch {} })() }, [])
 
   const handleLinkWallet = async () => {
     setWalletStatus(null)
@@ -185,6 +193,70 @@ export function ConsumerSettingsPage() {
               </Button>
               {changeStatus && (
                 <p className={`text-sm ${changeStatus.tone === 'success' ? 'text-sand' : 'text-ember'}`}>{changeStatus.message}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-4 p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-purple-400">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-parchment">Withdrawal PIN</p>
+                  <p className="text-xs text-fog">Set or change a 4–6 digit PIN required to authorize withdrawals.</p>
+                </div>
+              </div>
+              {!pinStatus?.has_pin ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs uppercase tracking-[0.2em] text-fog">New PIN</label>
+                    <input type="password" inputMode="numeric" pattern="[0-9]*" value={newPin} onChange={(e)=>setNewPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                  </div>
+                  <div>
+                    <label className="text-xs uppercase tracking-[0.2em] text-fog">Confirm PIN</label>
+                    <input type="password" inputMode="numeric" pattern="[0-9]*" value={confirmPin} onChange={(e)=>setConfirmPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                  </div>
+                  <Button
+                    onClick={async ()=>{
+                      setPinMsg(null);
+                      if (newPin.length<4||newPin.length>6) { setPinMsg({tone:'error',message:'PIN must be 4–6 digits'}); return }
+                      if (newPin!==confirmPin) { setPinMsg({tone:'error',message:'PINs do not match'}); return }
+                      try { await api.setPin(newPin); setPinMsg({tone:'success',message:'PIN set successfully'}); setPinStatus({ has_pin: true }); setNewPin(''); setConfirmPin('') } catch(e:any){ setPinMsg({tone:'error',message:e?.message||'Unable to set PIN'}) }
+                    }}
+                    variant="outline" className="w-fit border-white/20 text-parchment hover:text-black"
+                  >Set PIN</Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">Current PIN</label>
+                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={currPin} onChange={(e)=>setCurrPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">New PIN</label>
+                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={newPin} onChange={(e)=>setNewPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                    </div>
+                    <div>
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">Confirm PIN</label>
+                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={confirmPin} onChange={(e)=>setConfirmPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={async ()=>{
+                      setPinMsg(null);
+                      if (newPin.length<4||newPin.length>6) { setPinMsg({tone:'error',message:'PIN must be 4–6 digits'}); return }
+                      if (newPin!==confirmPin) { setPinMsg({tone:'error',message:'PINs do not match'}); return }
+                      try { await api.changePin(currPin, newPin); setPinMsg({tone:'success',message:'PIN updated'}); setCurrPin(''); setNewPin(''); setConfirmPin('') } catch(e:any){ setPinMsg({tone:'error',message:e?.message||'Unable to update PIN'}) }
+                    }}
+                    variant="outline" className="w-fit border-white/20 text-parchment hover:text-black"
+                  >Update PIN</Button>
+                </div>
+              )}
+              {pinMsg && (
+                <p className={`text-sm ${pinMsg.tone === 'success' ? 'text-sand' : 'text-ember'}`}>{pinMsg.message}</p>
               )}
             </CardContent>
           </Card>

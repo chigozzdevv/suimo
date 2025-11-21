@@ -11,21 +11,46 @@ function client() {
   return new SuiClient({ url })
 }
 
+function resolveWalCoinType(): string {
+  const env = loadEnv()
+  const configured = (process.env.WAL_COIN_TYPE || env.WAL_COIN_TYPE || '').trim()
+  if (configured) return configured
+  const network = env.WALRUS_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'
+  return network === 'mainnet'
+    ? '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL'
+    : '0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL'
+}
+
+function resolveWalDecimals(): number {
+  return Number(process.env.WAL_DECIMALS || loadEnv().WAL_DECIMALS || 9)
+}
+
 function platformKeypair() {
   const env = loadEnv()
-  const raw = process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY
+  const raw = (process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY || '').trim()
   if (!raw) throw new Error('SUI_PLATFORM_PRIVATE_KEY missing')
 
+  const to32 = (bytes: Uint8Array) => (bytes.length === 32 ? bytes : bytes.slice(0, 32))
+
   try {
-    if (raw.startsWith('suiprivkey')) {
+    if (raw.toLowerCase().startsWith('suiprivkey')) {
       const { secretKey } = decodeSuiPrivateKey(raw)
-      return Ed25519Keypair.fromSecretKey(secretKey)
+      return Ed25519Keypair.fromSecretKey(to32(secretKey))
     }
-    const cleaned = raw.includes(':') ? raw.split(':').pop()! : raw
-    const buf = cleaned.startsWith('0x') ? new Uint8Array(Buffer.from(cleaned.slice(2), 'hex')) : fromB64(cleaned)
-    return Ed25519Keypair.fromSecretKey(buf)
-  } catch (e) {
-    throw new Error('Invalid SUI_PLATFORM_PRIVATE_KEY format')
+    let cleaned = raw
+    if (cleaned.includes(':')) cleaned = cleaned.split(':').pop()!.trim()
+    let bytes: Uint8Array
+    const hex = cleaned.startsWith('0x') ? cleaned.slice(2) : cleaned
+    const isHex = /^[0-9a-fA-F]+$/.test(hex)
+    if (isHex && (hex.length % 2 === 0)) {
+      bytes = new Uint8Array(Buffer.from(hex, 'hex'))
+    } else {
+      bytes = fromB64(cleaned)
+    }
+    if (bytes.length !== 32) bytes = to32(bytes)
+    return Ed25519Keypair.fromSecretKey(bytes)
+  } catch (e: any) {
+    throw new Error(`Invalid SUI_PLATFORM_PRIVATE_KEY format: ${e?.message || e}`)
   }
 }
 
@@ -40,22 +65,20 @@ function toAtomic(amountUi: string | number, decimals: number): bigint {
 export async function getBalances(address: string) {
   const c = client()
   const suiBal = await c.getBalance({ owner: address })
-  const walType = process.env.WAL_COIN_TYPE || loadEnv().WAL_COIN_TYPE
+  const walType = resolveWalCoinType()
+  const dec = resolveWalDecimals()
   let wal = 0
-  if (walType) {
-    const dec = Number(process.env.WAL_DECIMALS || loadEnv().WAL_DECIMALS || 9)
+  try {
     const b = await c.getBalance({ owner: address, coinType: walType })
     wal = Number(b.totalBalance || '0') / Math.pow(10, dec)
-  }
+  } catch {}
   const sui = Number(suiBal.totalBalance || '0') / 1e9
   return { sui, wal }
 }
 
 export async function transferWal(toAddress: string, amountUi: number | string): Promise<string> {
-  const env = loadEnv()
-  const coinType = process.env.WAL_COIN_TYPE || env.WAL_COIN_TYPE
-  const decimals = Number(process.env.WAL_DECIMALS || env.WAL_DECIMALS || 9)
-  if (!coinType) throw new Error('WAL_COIN_TYPE missing')
+  const coinType = resolveWalCoinType()
+  const decimals = resolveWalDecimals()
   const kp = platformKeypair()
   const c = client()
   const owner = kp.getPublicKey().toSuiAddress()
@@ -88,20 +111,4 @@ export async function topUpSui(toAddress: string, amountSui: number): Promise<st
   return res.digest
 }
 
-export async function fundAgentOnSignup(userId: string) {
-  const env = loadEnv()
-  const on = (v?: string) => !!v && ['1', 'true', 'yes', 'on'].includes(v.toLowerCase())
-  if (!on(process.env.FUND_AGENT_ON_SIGNUP || env.FUND_AGENT_ON_SIGNUP)) return
-  const { findWalletKey } = await import('@/features/wallets/keys.model.js')
-  const { creditWallet } = await import('@/features/wallets/wallets.model.js')
-  const payerKey = await findWalletKey(userId, 'payer', 'sui')
-  if (!payerKey?.public_key) return
-  const to = payerKey.public_key
-  const suiAmt = Number(process.env.FUND_SUI_ON_SIGNUP || env.FUND_SUI_ON_SIGNUP || 0.02)
-  if (suiAmt > 0) await topUpSui(to, suiAmt)
-  const walAmt = Number(process.env.FUND_WAL_ON_SIGNUP || env.FUND_WAL_ON_SIGNUP || 0)
-  if (walAmt > 0) {
-    await transferWal(to, walAmt)
-    await creditWallet(userId, 'payer', walAmt, 'signup_bonus', 'initial_airdrop_wal')
-  }
-}
+// signup funding removed per product decision

@@ -25,6 +25,8 @@ type ResourceFormState = {
   modes: { raw: boolean; summary: boolean };
   connectorId: string;
   file?: File;
+  epochs?: string;
+  deletable?: boolean;
 };
 
 const defaultResourceForm: ResourceFormState = {
@@ -43,6 +45,8 @@ const defaultResourceForm: ResourceFormState = {
   visibility: 'public',
   modes: { raw: true, summary: false },
   connectorId: '',
+  epochs: '1',
+  deletable: true,
 };
 
 function formatCurrency(amount: number) {
@@ -72,6 +76,11 @@ export function ResourcesPage() {
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [walUsd, setWalUsd] = useState<number | null>(null);
+  const [walrusQuote, setWalrusQuote] = useState<{ wal_est: number; sui_est: number | null; encoded_bytes?: number } | null>(null);
+  const [extendOpen, setExtendOpen] = useState(false);
+  const [extendResource, setExtendResource] = useState<Resource | null>(null);
+  const [extendAddEpochs, setExtendAddEpochs] = useState<string>('1');
+  const [extendQuote, setExtendQuote] = useState<{ wal_est: number; sui_est: number | null; encoded_bytes?: number } | null>(null);
 
   useEffect(() => {
     loadPage();
@@ -145,7 +154,10 @@ export function ResourcesPage() {
       if ((resourceForm.type === 'file' || resourceForm.type === 'dataset') && resourceForm.file) {
         setUploadingFile(true);
         try {
-          walrusUpload = await api.uploadEncryptedToWalrus(resourceForm.file);
+          walrusUpload = await api.uploadEncryptedToWalrus(resourceForm.file, {
+            epochs: Math.max(1, parseInt(resourceForm.epochs || '1', 10) || 1),
+            deletable: resourceForm.deletable,
+          });
         } finally {
           setUploadingFile(false);
         }
@@ -229,6 +241,24 @@ export function ResourcesPage() {
       setResourceForm({ ...resourceForm, file });
       if (!resourceForm.title) {
         setResourceForm({ ...resourceForm, file, title: file.name });
+      }
+      const epochs = Math.max(1, parseInt(resourceForm.epochs || '1', 10) || 1);
+      api
+        .getWalrusQuote({ size_bytes: file.size, epochs, deletable: resourceForm.deletable })
+        .then((q) => setWalrusQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes }))
+        .catch(() => setWalrusQuote(null));
+    }
+  };
+
+  const handleEpochsChange = async (val: string) => {
+    setResourceForm({ ...resourceForm, epochs: val });
+    const epochs = Math.max(1, parseInt(val || '1', 10) || 1);
+    if (resourceForm.file) {
+      try {
+        const q = await api.getWalrusQuote({ size_bytes: resourceForm.file.size, epochs, deletable: resourceForm.deletable });
+        setWalrusQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes });
+      } catch {
+        setWalrusQuote(null);
       }
     }
   };
@@ -317,6 +347,24 @@ export function ResourcesPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
+                  {resource.size_bytes && (resource as any).walrus_blob_id && (
+                    <Button
+                      variant="ghost"
+                      className="h-9 px-3"
+                      onClick={async () => {
+                        setExtendResource(resource);
+                        setExtendAddEpochs('1');
+                        setExtendQuote(null);
+                        setExtendOpen(true);
+                        try {
+                          const q = await api.getWalrusExtendQuote({ size_bytes: resource.size_bytes!, add_epochs: 1 });
+                          setExtendQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes });
+                        } catch { setExtendQuote(null); }
+                      }}
+                    >
+                      Extend
+                    </Button>
+                  )}
                           <Button
                             variant="ghost"
                             className="h-9 px-3"
@@ -444,6 +492,48 @@ export function ResourcesPage() {
                     {(resourceForm.file.size / 1024).toFixed(1)} KB
                   </span>
                 )}
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs text-fog">Storage Duration (epochs)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={53}
+                    value={resourceForm.epochs}
+                    onChange={(e) => handleEpochsChange(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+                    placeholder="1"
+                  />
+                  <div className="mt-1 text-xs text-fog">Testnet: ~1 day/epoch; Mainnet: ~14 days/epoch</div>
+                  <label className="mt-3 flex items-center gap-2 text-sm text-fog">
+                    <input
+                      type="checkbox"
+                      checked={!!resourceForm.deletable}
+                      onChange={async (e) => {
+                        const deletable = e.target.checked
+                        setResourceForm({ ...resourceForm, deletable })
+                        if (resourceForm.file) {
+                          try {
+                            const q = await api.getWalrusQuote({ size_bytes: resourceForm.file.size, epochs: Math.max(1, parseInt(resourceForm.epochs || '1', 10) || 1), deletable })
+                            setWalrusQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes })
+                          } catch { setWalrusQuote(null) }
+                        }
+                      }}
+                    />
+                    Deletable
+                  </label>
+                </div>
+                <div className="text-sm text-fog">
+                  <div className="text-xs text-fog mb-1">Estimated Cost</div>
+                  {walrusQuote ? (
+                    <div className="text-parchment">
+                      {walrusQuote.wal_est.toFixed(4)} WAL <span className="text-fog">+ {walrusQuote.sui_est !== null && walrusQuote.sui_est !== undefined ? walrusQuote.sui_est.toFixed(3) : '~'} SUI gas</span>
+                    </div>
+                  ) : (
+                    <div className="text-fog/70">Select a file to see estimate</div>
+                  )}
+                </div>
               </div>
             </Field>
           )}
@@ -714,6 +804,46 @@ export function ResourcesPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={extendOpen} title="Extend storage" onClose={() => { setExtendOpen(false); setExtendResource(null); }}>
+        <div className="space-y-3">
+          <div className="text-sm text-fog">{extendResource?.title}</div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-fog">Add Epochs</label>
+              <input
+                type="number"
+                min={1}
+                max={53}
+                value={extendAddEpochs}
+                onChange={async (e) => {
+                  const v = e.target.value;
+                  setExtendAddEpochs(v);
+                  const n = Math.max(1, parseInt(v || '1', 10) || 1);
+                  if (extendResource?.size_bytes) {
+                    try {
+                      const q = await api.getWalrusExtendQuote({ size_bytes: extendResource.size_bytes, add_epochs: n });
+                      setExtendQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes });
+                    } catch { setExtendQuote(null); }
+                  }
+                }}
+                className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+              />
+              <div className="mt-1 text-xs text-fog">Testnet: ~1 day/epoch; Mainnet: ~14 days/epoch</div>
+            </div>
+            <div className="md:col-span-1">
+              <div className="text-xs text-fog mb-1">Estimated Cost</div>
+              {extendQuote ? (
+                <div className="text-parchment text-sm">
+                  {extendQuote.wal_est.toFixed(4)} WAL <span className="text-fog">+ {extendQuote.sui_est !== null && extendQuote.sui_est !== undefined ? extendQuote.sui_est.toFixed(3) : '~'} SUI gas</span>
+                </div>
+              ) : (
+                <div className="text-fog/70 text-sm">Enter epochs to see estimate</div>
+              )}
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );

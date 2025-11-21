@@ -452,6 +452,18 @@ class ApiService {
     return [res.payer, res.payout].filter(Boolean);
   }
 
+  async getPinStatus(): Promise<{ has_pin: boolean; locked_until?: string; failed_attempts: number; remaining_attempts: number }> {
+    return this.request('/wallets/pin');
+  }
+
+  async setPin(pin: string): Promise<{ ok: boolean }> {
+    return this.request('/wallets/pin/set', { method: 'POST', body: JSON.stringify({ pin }) });
+  }
+
+  async changePin(current_pin: string, new_pin: string): Promise<{ ok: boolean }> {
+    return this.request('/wallets/pin/change', { method: 'POST', body: JSON.stringify({ current_pin, new_pin }) });
+  }
+
   async getProvider(): Promise<Provider> {
     const res = await this.request<{ provider: Provider }>('/providers/me');
     return res.provider;
@@ -472,10 +484,10 @@ class ApiService {
     });
   }
 
-  async createWithdrawal(role: 'payer' | 'payout', amount: number, to: string): Promise<{ id: string; tx_hash?: string }> {
+  async createWithdrawal(role: 'payer' | 'payout', amount: number, to: string, pin?: string): Promise<{ id: string; tx_hash?: string }> {
     return this.request<{ id: string; tx_hash?: string }>('/wallets/withdrawals', {
       method: 'POST',
-      body: JSON.stringify({ role, amount, to }),
+      body: JSON.stringify({ role, amount, to, pin }),
     });
   }
 
@@ -620,7 +632,7 @@ class ApiService {
 
   
 
-  async uploadEncryptedToWalrus(file: File): Promise<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number; cipher_meta: { algo: string; size_bytes: number } }> {
+  async uploadEncryptedToWalrus(file: File, opts?: { epochs?: number; deletable?: boolean }): Promise<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number; cipher_meta: { algo: string; size_bytes: number } }> {
     const sealMod: any = await import('@mysten/seal');
     const { AesGcm256, encrypt: sealEncrypt, retrieveKeyServers } = sealMod;
     const { SuiClient, getFullnodeUrl } = await import('@mysten/sui/client');
@@ -660,7 +672,7 @@ class ApiService {
       return btoa(binary);
     };
     const b64 = toBase64(encryptedObject);
-    const res = await this.request<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number }>('/datasets/upload', { method: 'POST', body: JSON.stringify({ encrypted_object_b64: b64 }) });
+    const res = await this.request<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number }>('/datasets/upload', { method: 'POST', body: JSON.stringify({ encrypted_object_b64: b64, epochs: opts?.epochs ?? 1, deletable: opts?.deletable ?? true }) });
     return { walrus_blob_id: res.walrus_blob_id, walrus_blob_object_id: res.walrus_blob_object_id, size_bytes: file.size, cipher_meta: { algo: 'seal-ibe-aes256gcm', size_bytes: file.size } };
   }
 
@@ -691,6 +703,14 @@ class ApiService {
 
   async getPrices(): Promise<PricesResponse> {
     return this.request<PricesResponse>(`/prices`)
+  }
+
+  async getWalrusQuote(params: { size_bytes: number; epochs: number; deletable?: boolean }): Promise<{ encoded_bytes?: number; epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }>{
+    return this.request(`/walrus/quote`, { method: 'POST', body: JSON.stringify(params) })
+  }
+
+  async getWalrusExtendQuote(params: { size_bytes: number; add_epochs: number }): Promise<{ encoded_bytes?: number; add_epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }>{
+    return this.request(`/walrus/extend-quote`, { method: 'POST', body: JSON.stringify(params) })
   }
 
   async getSealKeyServers(): Promise<string[]> {

@@ -20,6 +20,12 @@ export function WalletPage() {
   const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
   const [copyToast, setCopyToast] = useState<string | null>(null);
   const network = (import.meta.env.VITE_WALRUS_NETWORK === 'mainnet' ? 'Mainnet' : 'Testnet') as 'Mainnet' | 'Testnet'
+  const [pinStatus, setPinStatus] = useState<{ has_pin: boolean; locked_until?: string; remaining_attempts?: number } | null>(null)
+  const [withdrawPin, setWithdrawPin] = useState('')
+  const [setPinOpen, setSetPinOpen] = useState(false)
+  const [newPin, setNewPin] = useState('')
+  const [confirmNewPin, setConfirmNewPin] = useState('')
+  const [setPinStatusMsg, setSetPinStatusMsg] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
 
   useEffect(() => {
     loadWallets();
@@ -60,15 +66,28 @@ export function WalletPage() {
       setWithdrawStatus({ tone: 'error', message: 'Destination address is required.' });
       return;
     }
+    if (pinStatus?.has_pin) {
+      if (!withdrawPin) { setWithdrawStatus({ tone: 'error', message: 'Enter your withdrawal PIN.' }); return; }
+      if (pinStatus.locked_until && new Date(pinStatus.locked_until).getTime() > Date.now()) { setWithdrawStatus({ tone: 'error', message: 'PIN is temporarily locked. Try again later.' }); return; }
+    }
     setWithdrawSubmitting(true);
     try {
-      const res = await api.createWithdrawal('payout', amount, withdrawAddress.trim());
+      const res = await api.createWithdrawal('payout', amount, withdrawAddress.trim(), pinStatus?.has_pin ? withdrawPin : undefined);
       setWithdrawStatus({ tone: 'success', message: `Withdrawal ${res.id} sent. Check ${withdrawAddress.trim()} after a few seconds.` });
       setWithdrawAmount('');
       setWithdrawAddress('');
+      setWithdrawPin('');
       await loadWallets();
     } catch (err: any) {
-      setWithdrawStatus({ tone: 'error', message: err.message || 'Unable to create withdrawal' });
+      const msg = String(err?.message || '')
+      const friendly =
+        msg.includes('PIN_REQUIRED') ? 'Withdrawal PIN is required.' :
+        msg.includes('PIN_INVALID') ? 'Invalid PIN. Please try again.' :
+        msg.includes('PIN_LOCKED') ? 'Too many attempts. PIN is locked temporarily.' :
+        msg.includes('PIN_NOT_SET') ? 'Please set a withdrawal PIN to continue.' :
+        (err?.message || 'Unable to create withdrawal')
+      setWithdrawStatus({ tone: 'error', message: friendly });
+      try { const st = await api.getPinStatus(); setPinStatus(st) } catch {}
     } finally {
       setWithdrawSubmitting(false);
     }
@@ -203,7 +222,7 @@ const MAX_REQUEST_AMOUNT = 5000;
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" className="flex-1 gap-2" onClick={() => setWithdrawOpen(true)}>
+                <Button variant="outline" className="flex-1 gap-2" onClick={async () => { setWithdrawOpen(true); try { const st = await api.getPinStatus(); setPinStatus(st); } catch {} }}>
                   <ArrowUpRight className="w-4 h-4" />
                   Withdraw
                 </Button>
@@ -266,7 +285,7 @@ const MAX_REQUEST_AMOUNT = 5000;
         <div className="space-y-4">
           <p className="text-sm text-parchment font-medium">Fund your wallets on {network}</p>
 
-          <div className="rounded-2xl border border-white/15 bg-[#121212] p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-3 text-xs uppercase tracking-wider text-fog/70">Your Payer Wallet Address</div>
             <div className="flex items-center gap-2">
               <p className="flex-1 break-all font-mono text-sm text-parchment">{payerWallet?.address || 'Address unavailable'}</p>
@@ -297,7 +316,9 @@ const MAX_REQUEST_AMOUNT = 5000;
               </li>
               <li className="flex gap-3">
                 <span className="shrink-0 font-bold">4.</span>
-                <span>Acquire testnet WAL as needed (see Walrus docs)</span>
+                <span>
+                  Get WAL on testnet: <a href="https://stakely.io/faucet/walrus-testnet-wal" target="_blank" rel="noopener noreferrer" className="underline hover:text-parchment font-medium">Stakely WAL faucet</a>
+                </span>
               </li>
             </ol>
           </div>
@@ -312,7 +333,7 @@ const MAX_REQUEST_AMOUNT = 5000;
         </div>
       </Modal>
 
-      <Modal open={withdrawOpen} title="Withdraw funds" onClose={() => { setWithdrawOpen(false); setWithdrawStatus(null); }}>
+      <Modal open={withdrawOpen} title="Withdraw funds" onClose={() => { setWithdrawOpen(false); setWithdrawStatus(null); setWithdrawPin(''); }}>
         <div className="space-y-4">
           <p className="text-sm text-fog">
             Send payout wallet funds to a SUI address (testnet). You can request up to ${MAX_REQUEST_AMOUNT.toLocaleString()} per withdrawal.
@@ -337,6 +358,30 @@ const MAX_REQUEST_AMOUNT = 5000;
               placeholder="Enter SUI address"
             />
           </label>
+          {pinStatus?.has_pin ? (
+            <label className="space-y-1 text-sm text-fog">
+              <span>Withdrawal PIN</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={withdrawPin}
+                onChange={(e) => setWithdrawPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
+                placeholder="Enter 4–6 digit PIN"
+              />
+              {pinStatus?.locked_until && new Date(pinStatus.locked_until).getTime() > Date.now() && (
+                <div className="text-xs text-ember">PIN locked until {new Date(pinStatus.locked_until).toLocaleTimeString()}</div>
+              )}
+            </label>
+          ) : (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-fog">
+              <div className="flex items-center justify-between gap-2">
+                <span>No withdrawal PIN set</span>
+                <Button variant="outline" className="h-8 border-white/20" onClick={() => setSetPinOpen(true)}>Create PIN</Button>
+              </div>
+            </div>
+          )}
           <Button onClick={handleWithdraw} disabled={withdrawSubmitting} className="mt-3 w-full">
             {withdrawSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit withdrawal'}
           </Button>
@@ -349,6 +394,37 @@ const MAX_REQUEST_AMOUNT = 5000;
               {withdrawStatus.message}
             </div>
           )}
+        </div>
+      </Modal>
+
+      <Modal open={setPinOpen} title="Create withdrawal PIN" onClose={() => { setSetPinOpen(false); setNewPin(''); setConfirmNewPin(''); setSetPinStatusMsg(null); }}>
+        <div className="space-y-3">
+          <p className="text-sm text-fog">Set a 4–6 digit PIN to authorize withdrawals.</p>
+          <label className="space-y-1 text-sm text-fog">
+            <span>New PIN</span>
+            <input type="password" inputMode="numeric" pattern="[0-9]*" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment" />
+          </label>
+          <label className="space-y-1 text-sm text-fog">
+            <span>Confirm PIN</span>
+            <input type="password" inputMode="numeric" pattern="[0-9]*" value={confirmNewPin} onChange={(e) => setConfirmNewPin(e.target.value.replace(/[^0-9]/g, '').slice(0,6))} className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-parchment" />
+          </label>
+          <Button
+            onClick={async () => {
+              setSetPinStatusMsg(null)
+              if (newPin.length < 4 || newPin.length > 6) { setSetPinStatusMsg({ tone:'error', message:'PIN must be 4–6 digits' }); return }
+              if (newPin !== confirmNewPin) { setSetPinStatusMsg({ tone:'error', message:'PINs do not match' }); return }
+              try {
+                await api.setPin(newPin)
+                setSetPinStatusMsg({ tone:'success', message:'PIN set successfully' })
+                setPinStatus({ has_pin: true })
+                setTimeout(() => setSetPinOpen(false), 700)
+              } catch (e:any) {
+                setSetPinStatusMsg({ tone:'error', message: e?.message || 'Unable to set PIN' })
+              }
+            }}
+            className="w-full"
+          >Save PIN</Button>
+          {setPinStatusMsg && <div className={`rounded-xl border px-3 py-2 text-sm ${setPinStatusMsg.tone==='success'?'border-sand/40 bg-sand/10 text-sand':'border-ember/40 bg-ember/10 text-ember'}`}>{setPinStatusMsg.message}</div>}
         </div>
       </Modal>
     </>

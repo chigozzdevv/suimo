@@ -80,9 +80,19 @@ export async function createDepositService(userId: string, role: 'payer' | 'payo
   return { id: depId, instructions: null as any };
 }
 
-export async function createWithdrawalService(userId: string, role: 'payer' | 'payout', amount: number, to: string) {
+import { verifyPin, getPin } from '@/features/wallets/pin.model.js';
+
+export async function createWithdrawalService(userId: string, role: 'payer' | 'payout', amount: number, to: string, pin?: string) {
   if (amount > MAX_TRANSFER_AMOUNT) {
     throw new Error('AMOUNT_EXCEEDS_LIMIT');
+  }
+  const pinDoc = await getPin(userId)
+  if (pinDoc?.hash) {
+    if (!pin) throw new Error('PIN_REQUIRED')
+    const verdict = await verifyPin(userId, pin)
+    if (verdict === 'locked') throw new Error('PIN_LOCKED')
+    if (verdict === 'invalid') throw new Error('PIN_INVALID')
+    if (verdict === 'not_set') throw new Error('PIN_NOT_SET')
   }
   const wId = 'wd_' + crypto.randomUUID();
   await debitWallet(userId, role, amount, 'withdrawal', wId);

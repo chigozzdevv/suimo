@@ -79,7 +79,7 @@ export async function uploadDatasetController(req: FastifyRequest, reply: Fastif
   const body = uploadDatasetInput.parse(req.body);
   const bytes = Buffer.from(body.encrypted_object_b64, 'base64');
   try {
-    const res = await putWalrusBlobAsProvider(userId, new Uint8Array(bytes), { deletable: body.deletable ?? true, epochs: body.epochs ?? 3 });
+    const res = await putWalrusBlobAsProvider(userId, new Uint8Array(bytes), { deletable: body.deletable ?? true, epochs: body.epochs ?? 1 });
     return reply.send({ walrus_blob_id: res.id, walrus_blob_object_id: res.objectId, size_bytes: res.size });
   } catch (e: any) {
     const msg = String(e?.message || 'UPLOAD_FAILED');

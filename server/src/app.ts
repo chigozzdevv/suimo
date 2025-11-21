@@ -18,6 +18,7 @@ import { registerConnectorsRoutes } from '@/features/connectors/connectors.route
 import { registerMarketsRoutes } from '@/features/markets/markets.routes.js';
 import { registerSealRoutes } from '@/features/seal/seal.routes.js';
 import { registerPricesRoutes } from '@/features/prices/prices.routes.js';
+import { registerWalrusRoutes } from '@/features/walrus/walrus.routes.js';
  
 
 export function buildApp() {
@@ -44,6 +45,7 @@ export function buildApp() {
   app.register(registerConnectorsRoutes, { prefix: '/' });
   app.register(registerMarketsRoutes, { prefix: '/' });
   app.register(registerPricesRoutes, { prefix: '/' });
+  app.register(registerWalrusRoutes, { prefix: '/' });
   app.register(registerSealRoutes, { prefix: '/' });
   app.register(registerWalletsRoutes, { prefix: '/' });
   app.register(registerCapsRoutes, { prefix: '/' });
