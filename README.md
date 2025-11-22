@@ -1,6 +1,14 @@
 # Suimo — Authorized data for AI agents (powered by Walrus and Sui)
 
-Suimo lets AI agents fetch authorized content with consent, metering, and instant custodial settlement in USDC on Sui. Content blobs are stored publicly on Walrus, encrypted with Seal and unlocked on-chain via policy-gated decryption.
+Suimo lets AI agents fetch authorized content with consent, metering, and instant settlement in WAL tokens on Sui. Content blobs are stored publicly on Walrus, encrypted with Seal and unlocked on-chain via policy-gated decryption.
+
+## Powered by Walrus & Sui
+
+- **Walrus Storage**: All data resources (files, datasets) are stored as blobs on Walrus.
+- **Seal Encryption**: Data is encrypted client-side using Mysten's Seal before upload.
+- **Policy-Gated Access**: Decryption keys are only released to authorized parties (the platform) after on-chain payment verification.
+- **Sui Payments**: Real-time settlement using WAL tokens on the Sui testnet.
+- **MCP Gateway**: A standard interface for AI agents to discover, purchase, and use these decentralized resources.
 
 ## Table of contents
 
@@ -24,15 +32,15 @@ Suimo lets AI agents fetch authorized content with consent, metering, and instan
 ## 1) What Suimo does
 
 - Consent-first access for agents to provider resources (sites, datasets, files)
-- Usage-based pricing (flat or per-KB), spending caps, and per-request metering
-- Settlement: custodial holds/capture plus on-chain payout in USDC on Sui
+- Usage-based pricing (flat or per-KB) in WAL tokens
+- Settlement: Instant WAL transfer from consumer to platform, then platform to provider
 - Privacy: client-side encryption (Seal) → public blob storage (Walrus) → policy-gated decryption
 
 ## 2) How it works
 
 1. Agents authenticate and discover resources via MCP (OAuth 2.1 + PKCE).
 2. For file/dataset uploads, the client encrypts locally with Seal and uploads the encrypted envelope; the server stores it on Walrus.
-3. For fetches, Suimo computes cost from size/price, captures the custodial hold, pays providers on Sui, fetches the ciphertext from Walrus, authorizes decryption via Seal (policy session), and returns plaintext chunks.
+3. For fetches, Suimo calculates the WAL cost, executes a transfer from the consumer's custodial wallet, pays the provider, fetches the ciphertext from Walrus, authorizes decryption via Seal (policy session), and returns plaintext chunks.
 4. Every access yields an Ed25519-signed receipt, with links to Sui Explorer for payouts.
 
 ## 3) Architecture
@@ -42,7 +50,7 @@ Suimo lets AI agents fetch authorized content with consent, metering, and instan
 - Server (Fastify + TypeScript + MongoDB)
   - Auth: email/password and Sui wallet login; OAuth 2.1 for MCP
   - MCP runtime: `suimo-mcp` tools for discovery and fetch
-  - Settlement: internal ledger (holds/captures) + Sui USDC payout to providers
+  - Settlement: Custodial WAL wallet management + on-chain payouts
   - Storage: Walrus blob write/read/delete; Seal decryption flow for policy-gated access
   - Receipts: Ed25519 JWT signatures, Sui explorer links
 
@@ -50,7 +58,7 @@ Suimo lets AI agents fetch authorized content with consent, metering, and instan
 
 - MCP (Model Context Protocol): standardized tools for agent integrations
 - OAuth 2.1 + PKCE: authorize agents to use MCP tools against Suimo’s protected resource
-- Sui + USDC: provider payouts on Sui; receipts link to Sui Explorer
+- Sui + WAL: provider payouts in WAL tokens; receipts link to Sui Explorer
 - Walrus: public, content-addressed blob storage for encrypted payloads
 - Seal (Mysten): client-side encryption and on-chain policy-gated decryption
 
@@ -87,8 +95,9 @@ Sui + payout:
 
 - `SUI_RPC_URL=https://fullnode.testnet.sui.io`
 - `SUI_PLATFORM_PRIVATE_KEY=<base64-ed25519-secret>` (platform signer)
-- `SUI_USDC_TYPE=<0x...::usdc::USDC>` and `SUI_USDC_DECIMALS=6`
 - `SUI_PAYTO=<platform Sui address>` (custodial recipient / payout source)
+- `WAL_COIN_TYPE=0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL`
+- `WAL_DECIMALS=9`
 
 Walrus + Seal:
 
@@ -162,4 +171,4 @@ Base: `https://api.suimo.com/mcp` (or your local base)
 
 - Decryption blocked: confirm `VITE_SEAL_KEY_SERVERS`, `VITE_SEAL_POLICY_PACKAGE`, and Sui RPC
 - Uploads fail: verify Walrus network and platform signer on the server
-- Payouts fail: ensure `SUI_PLATFORM_PRIVATE_KEY` is valid and funded; `SUI_USDC_TYPE` correct for your network
+- Payouts fail: ensure `SUI_PLATFORM_PRIVATE_KEY` is valid and funded; `WAL_COIN_TYPE` correct for your network
