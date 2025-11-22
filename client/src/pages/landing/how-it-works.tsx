@@ -43,17 +43,15 @@ export function HowItWorks() {
           title="Connect via MCP"
           description="Connect Suimo's MCP to your agent (Claude, ChatGPT, any OAuth-capable client) and authenticate with OAuth 2.0 (PKCE)"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1 flex flex-col justify-start">
-            <div className="text-xs uppercase tracking-wider text-fog mb-3">
+          <div className="flex-1 flex flex-col justify-start space-y-3">
+            <div className="text-xs uppercase tracking-wider text-fog">
               Endpoint
             </div>
-            <code className="block truncate rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-sand">
-              https://api.suimo.com/mcp
+            <code className="block truncate rounded-lg bg-white/5 p-3 text-xs text-sand">
+              https://suimo.onrender.com/mcp
             </code>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Pill icon={Link} color="blue">
-                OAuth 2.0 (PKCE)
-              </Pill>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill icon={Link} color="blue">OAuth 2.0 (PKCE)</Pill>
               <Pill color="purple">Claude</Pill>
               <Pill color="green">ChatGPT</Pill>
               <Pill color="cyan">Any MCP client</Pill>
@@ -66,8 +64,8 @@ export function HowItWorks() {
           title="Discover resources"
           description="Type your query; agent calls discover_resources to find licensed sources with details; you select the one you want"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1 flex flex-col justify-start">
-            <div className="mb-3 flex items-center gap-2 text-xs text-fog">
+          <div className="flex-1 flex flex-col justify-start space-y-3">
+            <div className="flex items-center gap-2 text-xs text-fog">
               <Search className="h-3.5 w-3.5" /> discover_resources(query)
             </div>
             <div className="space-y-2">
@@ -83,21 +81,17 @@ export function HowItWorks() {
           title="Pay & Fetch"
           description="Pay with your custodial balance in SUI USDC; receive a signed cryptographic receipt and your agent receives the data to work with"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1 flex flex-col justify-start">
-            <div className="text-xs font-mono text-parchment/80 mb-2">
+          <div className="flex-1 flex flex-col justify-start space-y-3">
+            <div className="text-xs font-mono text-parchment/80">
               POST /v1/fetch
             </div>
-            <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-fog">
+            <div className="rounded-lg bg-white/5 p-3 text-xs text-fog">
               {`{ url: "/articles/abc", budget: "$0.40" }`}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Pill icon={Wallet} color="green">
-                Custodial wallet (SUI USDC)
-              </Pill>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill icon={Wallet} color="green">Custodial wallet (SUI USDC)</Pill>
               <Pill color="blue">Instant custodial settlement</Pill>
-              <Pill icon={CheckCircle} color="cyan">
-                Signed receipt
-              </Pill>
+              <Pill icon={CheckCircle} color="cyan">Signed receipt</Pill>
             </div>
           </div>
         </StepCard>
@@ -114,19 +108,11 @@ export function HowItWorks() {
           title="Sign up & verify"
           description="Add your domain and verify via DNS TXT, or upload a file"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1">
+          <div className="flex-1">
             <div className="grid grid-cols-1 auto-rows-min items-start gap-3">
               <ColorTile icon={Globe} label="Add domain" color="blue" />
-              <ColorTile
-                icon={Shield}
-                label="Verify via DNS TXT"
-                color="cyan"
-              />
-              <ColorTile
-                icon={Upload}
-                label="Upload verification file"
-                color="orange"
-              />
+              <ColorTile icon={Shield} label="Verify via DNS TXT" color="cyan" />
+              <ColorTile icon={Upload} label="Upload verification file" color="orange" />
             </div>
           </div>
         </StepCard>
@@ -136,23 +122,11 @@ export function HowItWorks() {
           title="Auth & pricing"
           description="Add an auth connector, set pricing & access; or use Suimo's internal connector"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1">
+          <div className="flex-1">
             <div className="grid grid-cols-1 auto-rows-min items-start gap-3">
-              <ColorTile
-                icon={Plug}
-                label="Add auth connector"
-                color="purple"
-              />
-              <ColorTile
-                icon={Settings2}
-                label="Set pricing & access rules"
-                color="blue"
-              />
-              <ColorTile
-                icon={Shield}
-                label="Internal connector (Suimo-managed)"
-                color="cyan"
-              />
+              <ColorTile icon={Plug} label="Add auth connector" color="purple" />
+              <ColorTile icon={Settings2} label="Set pricing & access rules" color="blue" />
+              <ColorTile icon={Shield} label="Internal connector (Suimo-managed)" color="cyan" />
             </div>
           </div>
         </StepCard>
@@ -162,23 +136,11 @@ export function HowItWorks() {
           title="Publish & payouts"
           description="Publish resources. Usage credits accrue and settle to your payout wallet"
         >
-          <div className="min-h-[190px] md:min-h-[220px] rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex-1">
+          <div className="flex-1">
             <div className="grid grid-cols-1 auto-rows-min items-start gap-3">
-              <ColorTile
-                icon={CheckCircle}
-                label="Sign & publish"
-                color="green"
-              />
-              <ColorTile
-                icon={DollarSign}
-                label="Usage credits accrue"
-                color="orange"
-              />
-              <ColorTile
-                icon={Wallet}
-                label="Payout wallet (auto-settlement)"
-                color="green"
-              />
+              <ColorTile icon={CheckCircle} label="Sign & publish" color="green" />
+              <ColorTile icon={DollarSign} label="Usage credits accrue" color="orange" />
+              <ColorTile icon={Wallet} label="Payout wallet (auto-settlement)" color="green" />
             </div>
           </div>
         </StepCard>
@@ -218,9 +180,9 @@ function StepCard({
 
 function ResultRow({ name, badge }: { name: string; badge: string }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+    <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
       <span className="text-sm text-parchment/85">{name}</span>
-      <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-fog">
+      <span className="rounded-md bg-white/10 px-2 py-0.5 text-xs text-fog">
         {badge}
       </span>
     </div>

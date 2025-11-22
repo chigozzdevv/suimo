@@ -17,14 +17,14 @@ type SignupSuccessModalProps = {
 
 export function SignupSuccessModal({ open, onClose }: SignupSuccessModalProps) {
   const navigate = useNavigate();
-  const mcpUrl = "https://api.suimo.com/mcp";
+  const mcpUrl = "https://suimo.onrender.com/mcp";
   const [copied, setCopied] = useState(false as any);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(mcpUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   };
   return (
     <AnimatePresence>
@@ -93,14 +93,14 @@ export function SignupSuccessModal({ open, onClose }: SignupSuccessModalProps) {
                     </a>
                   </li>
                   <li>
-                    • Get WAL:{" "}
+                    • Get WAL via CLI:{" "}
                     <a
-                      href="https://stakely.io/faucet/walrus-testnet-wal"
+                      href="https://docs.wal.app/usage/setup.html"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline hover:text-parchment"
                     >
-                      Stakely WAL faucet
+                      Walrus setup docs
                     </a>
                   </li>
                 </ul>

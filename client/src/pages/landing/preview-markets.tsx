@@ -46,7 +46,7 @@ export function PreviewMarkets() {
         className="text-center"
       >
         <h2 className="text-3xl font-medium tracking-tight md:text-4xl">
-          Live Data Marketplace
+          Data Marketplace
         </h2>
         <p className="mt-3 text-base text-fog md:text-lg">
           Browse and access real-time, priced data resources

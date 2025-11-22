@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, ArrowRight, Zap, Key, Play } from "lucide-react";
 
 export function GetStartedPage() {
-  const mcpUrl = "https://api.suimo.com/mcp";
+  const mcpUrl = "https://suimo.onrender.com/mcp";
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(mcpUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -43,7 +43,7 @@ export function GetStartedPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="rounded-2xl border border-white/12 bg-[#111111]/85 p-6 md:p-8"
+            className="rounded-2xl border border-white/12 bg-[#0e1120]/90 p-6 md:p-8"
           >
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand/20 text-sand">
@@ -87,7 +87,7 @@ export function GetStartedPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="rounded-2xl border border-white/12 bg-[#111111]/85 p-6 md:p-8"
+            className="rounded-2xl border border-white/12 bg-[#0e1120]/90 p-6 md:p-8"
           >
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand/20 text-sand">
@@ -118,7 +118,7 @@ export function GetStartedPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="rounded-2xl border border-white/12 bg-[#111111]/85 p-6 md:p-8"
+            className="rounded-2xl border border-white/12 bg-[#0e1120]/90 p-6 md:p-8"
           >
             <div className="flex items-start gap-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand/20 text-sand">
