@@ -19,42 +19,42 @@ const KNOWN_WALLETS: Array<{
   icon: string;
   installUrl: string;
 }> = [
-  {
-    match: /suiet/i,
-    id: "suiet",
-    label: "Suiet",
-    icon: "/wallets/suiet.png",
-    installUrl: "https://suiet.app",
-  },
-  {
-    match: /slush|sui wallet/i,
-    id: "slush",
-    label: "Slush",
-    icon: "/wallets/slush.png",
-    installUrl: "https://sui.io",
-  },
-  {
-    match: /nightly/i,
-    id: "nightly",
-    label: "Nightly",
-    icon: "/wallets/nightly.png",
-    installUrl: "https://nightly.app/download",
-  },
-  {
-    match: /martian/i,
-    id: "martian",
-    label: "Martian",
-    icon: "/wallets/martian.png",
-    installUrl: "https://martianwallet.xyz",
-  },
-  {
-    match: /surf/i,
-    id: "surf",
-    label: "Surf",
-    icon: "/wallets/surf.png",
-    installUrl: "https://surfwallet.io",
-  },
-];
+    {
+      match: /suiet/i,
+      id: "suiet",
+      label: "Suiet",
+      icon: "/wallets/suiet.png",
+      installUrl: "https://suiet.app",
+    },
+    {
+      match: /slush|sui wallet/i,
+      id: "slush",
+      label: "Slush",
+      icon: "/wallets/slush.png",
+      installUrl: "https://sui.io",
+    },
+    {
+      match: /nightly/i,
+      id: "nightly",
+      label: "Nightly",
+      icon: "/wallets/nightly.png",
+      installUrl: "https://nightly.app/download",
+    },
+    {
+      match: /martian/i,
+      id: "martian",
+      label: "Martian",
+      icon: "/wallets/martian.png",
+      installUrl: "https://martianwallet.xyz",
+    },
+    {
+      match: /surf/i,
+      id: "surf",
+      label: "Surf",
+      icon: "/wallets/surf.png",
+      installUrl: "https://surfwallet.io",
+    },
+  ];
 
 function mapInstalledWallet(w: any): WalletDescriptor | null {
   const meta = KNOWN_WALLETS.find((k) => k.match.test(w.name));
@@ -95,8 +95,15 @@ export class WalletService {
     if (!wallet) throw new Error("Wallet is not installed");
     const connect = (wallet.features["standard:connect"] as any)?.connect;
     if (connect) await connect();
-    const account = wallet.accounts[0];
-    if (!account) throw new Error("No account found");
+    const account = wallet.accounts?.[0];
+    if (!account) {
+      console.error("Wallet connected but no account found:", wallet);
+      throw new Error("No account found in wallet");
+    }
+    if (!account.address) {
+      console.error("Wallet account has no address:", account);
+      throw new Error("Wallet account is missing address");
+    }
     return account.address;
   }
 
@@ -111,8 +118,12 @@ export class WalletService {
     const feature = wallet.features["sui:signPersonalMessage"] as any;
     if (!feature?.signPersonalMessage)
       throw new Error("Wallet does not support personal message signing");
+    const account = wallet.accounts[0];
+    if (!account) throw new Error("No account found to sign message");
+
     const res = await feature.signPersonalMessage({
       message: new TextEncoder().encode(message),
+      account,
     });
     return res.signature as string;
   }

@@ -425,6 +425,7 @@ class ApiService {
   async getWalletChallenge(
     data: WalletChallengeRequest,
   ): Promise<WalletChallengeResponse> {
+    if (!data?.address) throw new Error("Wallet address is required");
     return this.request<WalletChallengeResponse>("/auth/wallet/challenge", {
       method: "POST",
       body: JSON.stringify(data),
