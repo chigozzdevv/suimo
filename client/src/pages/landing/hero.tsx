@@ -29,13 +29,13 @@ export function Hero() {
         >
           The gateway between
           <br />
-          <span className="text-sand">AI agents and protected IPs</span>
+          <span className="text-sand">AI agents and protected data</span>
         </motion.h1>
 
         <p className="mt-6 md:mt-7 hidden text-base md:block md:text-xl text-fog text-pretty max-w-2xl mx-auto">
-          Suimo is an MCP gateway that lets AI agents fetch data behind
-          paywalls, logins, or anti-bot systems — legally and fairly — powered
-          by Walrus and SUI.
+          Suimo is an MCP gateway that lets AI agents fetch and consume data
+          behind paywalls, logins, or anti-bot systems — legally and fairly —
+          powered by Walrus+Seal on SUI.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 md:flex-row">
