@@ -19,6 +19,7 @@ import argon2 from "argon2";
 import { SignJWT } from "jose";
 import { initUserWallets } from "@/features/wallets/wallets.service.js";
 import { getOrCreateProvider } from "@/features/providers/providers.service.js";
+import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
 
 type AuthBundle = {
   token: string;
@@ -161,32 +162,11 @@ export async function createWalletChallenge(address: string, chain: "sui") {
   return { nonce, expiresAt, message: msg };
 }
 
-function parseSuiSerializedSignature(sig: string): {
-  scheme: number;
-  signature: Uint8Array;
-  pubkey: Uint8Array;
-} {
-  const bytes = Uint8Array.from(Buffer.from(sig, "base64"));
-  if (bytes.length < 1 + 64 + 32) throw new Error("BAD_SIGNATURE");
-  const scheme = bytes[0];
-  const signature = bytes.slice(1, 65);
-  const pubkey = bytes.slice(65);
-  return { scheme, signature, pubkey };
-}
-
 function normalizeAddr(input: string): string {
   let s = input.toLowerCase();
   if (s.startsWith("0x")) s = s.slice(2);
   s = s.replace(/^0+/, "");
   return "0x" + s;
-}
-
-function pubkeyToSuiAddress(scheme: number, pubkey: Uint8Array): string {
-  const pre = Buffer.concat([Buffer.from([scheme]), Buffer.from(pubkey)]);
-  const full = createHash("blake2b512").update(pre).digest();
-  const hex = Buffer.from(full.slice(0, 32)).toString("hex");
-  const trimmed = hex.replace(/^0+/, "");
-  return "0x" + trimmed;
 }
 
 export async function verifyWalletLink(
@@ -198,17 +178,21 @@ export async function verifyWalletLink(
 ) {
   const ch = await findValidChallenge(chain, address, nonce);
   if (!ch) return { ok: false as const, error: "INVALID_CHALLENGE" };
-  const msg = new TextEncoder().encode(
+
+  const msgBytes = new TextEncoder().encode(
     `Suimo Auth\nAddress:${address}\nNonce:${nonce}`,
   );
-  const parsed = parseSuiSerializedSignature(signature);
-  if (parsed.scheme !== 0x00)
-    return { ok: false as const, error: "UNSUPPORTED_SCHEME" };
-  const valid = nacl.sign.detached.verify(msg, parsed.signature, parsed.pubkey);
-  if (!valid) return { ok: false as const, error: "INVALID_SIGNATURE" };
-  const computed = pubkeyToSuiAddress(parsed.scheme, parsed.pubkey);
-  if (normalizeAddr(computed) !== normalizeAddr(address))
-    return { ok: false as const, error: "ADDRESS_MISMATCH" };
+
+  try {
+    const pubKey = await verifyPersonalMessageSignature(msgBytes, signature);
+    if (normalizeAddr(pubKey.toSuiAddress()) !== normalizeAddr(address)) {
+      return { ok: false as const, error: "ADDRESS_MISMATCH" };
+    }
+  } catch (e) {
+    console.error("Signature verification failed:", e);
+    return { ok: false as const, error: "INVALID_SIGNATURE" };
+  }
+
   const existing = await findWalletLinkByAddress(chain, address);
   if (existing && existing.user_id !== userId)
     return { ok: false as const, error: "ADDRESS_IN_USE" };
@@ -232,17 +216,21 @@ export async function walletLogin(
 ) {
   const ch = await findValidChallenge(chain, address, nonce);
   if (!ch) return { ok: false as const, error: "INVALID_CHALLENGE" };
-  const msg = new TextEncoder().encode(
+
+  const msgBytes = new TextEncoder().encode(
     `Suimo Auth\nAddress:${address}\nNonce:${nonce}`,
   );
-  const parsed = parseSuiSerializedSignature(signature);
-  if (parsed.scheme !== 0x00)
-    return { ok: false as const, error: "UNSUPPORTED_SCHEME" };
-  const valid = nacl.sign.detached.verify(msg, parsed.signature, parsed.pubkey);
-  if (!valid) return { ok: false as const, error: "INVALID_SIGNATURE" };
-  const computed = pubkeyToSuiAddress(parsed.scheme, parsed.pubkey);
-  if (normalizeAddr(computed) !== normalizeAddr(address))
-    return { ok: false as const, error: "ADDRESS_MISMATCH" };
+
+  try {
+    const pubKey = await verifyPersonalMessageSignature(msgBytes, signature);
+    if (normalizeAddr(pubKey.toSuiAddress()) !== normalizeAddr(address)) {
+      return { ok: false as const, error: "ADDRESS_MISMATCH" };
+    }
+  } catch (e) {
+    console.error("Signature verification failed:", e);
+    return { ok: false as const, error: "INVALID_SIGNATURE" };
+  }
+
   const link = await findWalletLinkByAddress(chain, address);
   if (!link) {
     const userId = "u_" + randomUUID();

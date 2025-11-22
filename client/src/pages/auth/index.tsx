@@ -17,7 +17,33 @@ export function AuthPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [isWalletMode, setIsWalletMode] = useState(false);
   const [error, setError] = useState("");
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleWalletAuth = async (adapter: WalletAdapterId) => {
+    setError("");
+    setConnectingWalletId(adapter);
+    try {
+      const address = await walletService.connectWallet(adapter);
+      const challenge = await api.getWalletChallenge({ chain: "sui", address });
+      const signature = await walletService.signMessage(
+        adapter,
+        challenge.message,
+      );
+      await walletLogin(address, signature, challenge.nonce);
+      if (mode === "signup") {
+        handleSignupBonusFlag();
+      } else if (redirectIfNeeded()) {
+        return;
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || "Wallet authentication failed";
+      setError(errorMsg);
+      setTimeout(() => setError(""), 5000);
+    } finally {
+      setConnectingWalletId(null);
+    }
+  };
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [returnTo, setReturnTo] = useState<string | null>(null);
 
@@ -96,30 +122,7 @@ export function AuthPage() {
     }
   };
 
-  const handleWalletAuth = async (adapter: WalletAdapterId) => {
-    setError("");
-    setIsLoading(true);
-    try {
-      const address = await walletService.connectWallet(adapter);
-      const challenge = await api.getWalletChallenge({ chain: "sui", address });
-      const signature = await walletService.signMessage(
-        adapter,
-        challenge.message,
-      );
-      await walletLogin(address, signature, challenge.nonce);
-      if (mode === "signup") {
-        handleSignupBonusFlag();
-      } else if (redirectIfNeeded()) {
-        return;
-      }
-    } catch (err: any) {
-      const errorMsg = err.message || "Wallet authentication failed";
-      setError(errorMsg);
-      setTimeout(() => setError(""), 5000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#0e1120] p-4 text-parchment">
@@ -153,8 +156,8 @@ export function AuthPage() {
             <button
               onClick={() => setMode("login")}
               className={`rounded-lg py-2 text-sm font-medium transition-colors ${mode === "login"
-                  ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : "text-fog hover:text-parchment"
+                ? "bg-blue-600 text-white hover:bg-blue-500"
+                : "text-fog hover:text-parchment"
                 }`}
             >
               Login
@@ -162,8 +165,8 @@ export function AuthPage() {
             <button
               onClick={() => setMode("signup")}
               className={`rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signup"
-                  ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : "text-fog hover:text-parchment"
+                ? "bg-blue-600 text-white hover:bg-blue-500"
+                : "text-fog hover:text-parchment"
                 }`}
             >
               Sign Up
@@ -186,7 +189,7 @@ export function AuthPage() {
               >
                 <WalletSelector
                   wallets={walletOptions}
-                  isLoading={isLoading}
+                  connectingWalletId={connectingWalletId}
                   showOther={showOtherWallets}
                   onToggleOther={() => setShowOtherWallets((prev) => !prev)}
                   onConnect={handleWalletAuth}
@@ -301,13 +304,13 @@ export function AuthPage() {
 
 function WalletSelector({
   wallets,
-  isLoading,
+  connectingWalletId,
   showOther,
   onToggleOther,
   onConnect,
 }: {
   wallets: WalletDescriptor[];
-  isLoading: boolean;
+  connectingWalletId: string | null;
   showOther: boolean;
   onToggleOther: () => void;
   onConnect: (adapter: WalletAdapterId) => void;
@@ -325,11 +328,13 @@ function WalletSelector({
           <Button
             key={wallet.id}
             onClick={() => wallet.adapter && onConnect(wallet.adapter)}
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-500"
+            disabled={!!connectingWalletId}
+            className="flex w-full items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <WalletLogo icon={wallet.icon} label={wallet.label} />
-            {isLoading ? "Connecting..." : `Connect ${wallet.label}`}
+            {connectingWalletId === wallet.adapter
+              ? "Connecting..."
+              : `Connect ${wallet.label}`}
           </Button>
         ))
       ) : (
