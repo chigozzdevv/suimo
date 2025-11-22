@@ -5,14 +5,14 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { fromB64 } from "@mysten/sui/utils";
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 
-function client() {
+export function client() {
   const env = loadEnv();
   const url =
     process.env.SUI_RPC_URL || env.SUI_RPC_URL || getFullnodeUrl("testnet");
   return new SuiClient({ url });
 }
 
-function resolveWalCoinType(): string {
+export function resolveWalCoinType(): string {
   const env = loadEnv();
   const configured = (
     process.env.WAL_COIN_TYPE ||
@@ -26,7 +26,7 @@ function resolveWalCoinType(): string {
     : "0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL";
 }
 
-function resolveWalDecimals(): number {
+export function resolveWalDecimals(): number {
   return Number(process.env.WAL_DECIMALS || loadEnv().WAL_DECIMALS || 9);
 }
 
@@ -83,7 +83,7 @@ export async function getBalances(address: string) {
   try {
     const b = await c.getBalance({ owner: address, coinType: walType });
     wal = Number(b.totalBalance || "0") / Math.pow(10, dec);
-  } catch {}
+  } catch { }
   const sui = Number(suiBal.totalBalance || "0") / 1e9;
   return { sui, wal };
 }

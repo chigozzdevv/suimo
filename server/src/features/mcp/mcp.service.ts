@@ -4,11 +4,6 @@ import {
   getResourceById,
 } from "@/features/mcp/mcp.model.js";
 import { getDb } from "@/config/db.js";
-import {
-  createHold,
-  releaseHold,
-  captureHold,
-} from "@/features/wallets/wallets.model.js";
 import { findProviderById } from "@/features/providers/providers.model.js";
 import { createSignedReceipt } from "@/features/receipts/receipts.model.js";
 import { getWalrusBlobChunks } from "@/features/walrus/walrus.service.js";
@@ -19,6 +14,7 @@ import { checkSpendingCaps } from "@/features/caps/caps.service.js";
 import { createAgent } from "@/features/agents/agents.service.js";
 import { transferWal } from "@/services/sui/sui.service.js";
 import { findWalletKey } from "@/features/wallets/keys.model.js";
+import { calculateWalAmount, verifyWalPayment } from "@/features/payments/wal-payments.service.js";
 
 export type PendingReceipt = {
   requestId: string;
@@ -68,7 +64,6 @@ export async function discoverService(params: {
     };
   });
 
-  // Simple heuristic scoring; higher relevance, lower price, lower latency → higher score.
   const scored = results
     .map((r) => ({
       ...r,
@@ -144,10 +139,11 @@ export async function fetchService(
     resourceId: string;
     mode: "raw" | "summary";
     constraints?: { maxCost?: number; maxBytes?: number };
+    payment_tx_digest?: string;
   },
   opts?: { settlementMode?: "internal" | "external" },
 ) {
-  const { userId, clientId, agentId, resourceId, mode, constraints } = params;
+  const { userId, clientId, agentId, resourceId, mode, constraints, payment_tx_digest } = params;
   const db = await getDb();
   const agentsColl = db.collection<any>("agents");
   // Resolve or create an active agent context for this client/user
@@ -262,17 +258,59 @@ export async function fetchService(
 
   const settlementMode = opts?.settlementMode ?? "internal";
 
-  let holdId: string | null = null;
-  if (settlementMode === "internal" && estCost > 0) {
+  let walAmountRequired = 0;
+  if (settlementMode === "internal" && estCost > 0 && !sameOwner) {
     try {
-      const hold = await createHold(activeAgent.user_id, requestId, estCost);
-      holdId = hold._id;
-    } catch (e: any) {
-      if (e && String(e.message).includes("INSUFFICIENT_FUNDS"))
+      const { walAmount, walUsdRate } = await calculateWalAmount(estCost);
+      walAmountRequired = walAmount;
+
+      if (!payment_tx_digest) {
         return {
           status: 402 as const,
           error: "PAYMENT_REQUIRED",
           quote: estCost,
+          walAmount: walAmountRequired,
+          walUsdRate,
+        };
+      }
+
+      const walletKey = await findWalletKey(userId, "payer");
+      if (!walletKey?.public_key) {
+        return {
+          status: 400 as const,
+          error: "CONSUMER_WALLET_NOT_LINKED",
+        };
+      }
+
+      const platformKey = await findWalletKey("platform", "payout");
+      if (!platformKey?.public_key) {
+        return {
+          status: 500 as const,
+          error: "PLATFORM_WALLET_NOT_CONFIGURED",
+        };
+      }
+
+      const verified = await verifyWalPayment({
+        txDigest: payment_tx_digest,
+        expectedAmountWal: walAmountRequired,
+        senderAddress: walletKey.public_key,
+        platformAddress: platformKey.public_key,
+      });
+
+      if (!verified) {
+        return {
+          status: 402 as const,
+          error: "PAYMENT_VERIFICATION_FAILED",
+          quote: estCost,
+          walAmount: walAmountRequired,
+          walUsdRate,
+        };
+      }
+    } catch (e: any) {
+      if (String(e.message).includes("WAL_PRICE_UNAVAILABLE"))
+        return {
+          status: 503 as const,
+          error: "PRICE_SERVICE_UNAVAILABLE",
         };
       throw e;
     }
@@ -371,12 +409,7 @@ export async function fetchService(
     } else if (resource.walrus_blob_id || resource.walrus_quilt_id) {
       const walrusId = resource.walrus_blob_id || resource.walrus_quilt_id!;
       walrusCipher = await getWalrusBlobChunks(walrusId);
-      bytesBilled =
-        typeof resource.size_bytes === "number"
-          ? resource.size_bytes
-          : walrusCipher.bytes;
     } else {
-      if (holdId) await releaseHold(holdId);
       return { status: 501 as const, error: "NO_CONNECTOR" };
     }
 
@@ -385,14 +418,6 @@ export async function fetchService(
       : isFlat
         ? resource.price_flat!
         : Number((unitPrice * (bytesBilled / 1024)).toFixed(6));
-    // Internal wallets: capture the hold and split fee to platform
-    if (settlementMode === "internal" && finalCost > 0 && holdId) {
-      const bps = Number(process.env.PLATFORM_FEE_BPS || "0");
-      const feeAmount = Number(((finalCost * bps) / 10000).toFixed(6));
-      await captureHold(holdId, finalCost, provider.user_id, feeAmount);
-      // prevent releasing a captured hold if subsequent steps throw
-      holdId = null;
-    }
 
     let providerSettlementTx: string | undefined;
     if (settlementMode === "internal" && finalCost > 0 && !sameOwner) {
@@ -459,7 +484,6 @@ export async function fetchService(
     const receipt = await createSignedReceipt(receiptPayload);
     return { status: 200 as const, content, receipt, requestId };
   } catch (err) {
-    if (holdId) await releaseHold(holdId);
     throw err;
   }
 }
