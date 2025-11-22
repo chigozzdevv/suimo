@@ -4,11 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/services/api";
 import type { Wallet } from "@/services/api";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Modal } from "@/components/ui/modal";
 import {
-  Wallet as WalletIcon,
-  TrendingDown,
   Plus,
   ArrowUpRight,
   Loader2,
@@ -164,13 +161,6 @@ export function WalletPage() {
     return <div className="text-ember">{error}</div>;
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
   const formatToken = (amount: number, decimals: number = 3) => {
     if (amount === undefined || amount === null) return "0";
     return new Intl.NumberFormat("en-US", {
@@ -182,12 +172,6 @@ export function WalletPage() {
   const payerWallet = wallets.find((w) => w.role === "payer");
   const payoutWallet = wallets.find((w) => w.role === "payout");
 
-  const walletPieData = [
-    { name: "Available", value: payerWallet?.available || 0 },
-    { name: "Blocked", value: payerWallet?.blocked || 0 },
-  ];
-
-  const COLORS = ["#D8C8A8", "#E07555"];
   const MAX_REQUEST_AMOUNT = 5000;
 
   return (
@@ -210,47 +194,43 @@ export function WalletPage() {
           >
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-fog mb-1">Payer Wallet</p>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-parchment">
-                        <span className="text-fog mr-2">SUI</span>
-                        {formatToken(payerWallet?.onchain?.sui || 0, 3)}
-                        {suiUsd && payerWallet?.onchain?.sui && (
-                          <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payerWallet.onchain.sui * suiUsd).toFixed(2)}
-                          </span>
-                        )}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#3771E0]/20 flex items-center justify-center text-[#3771E0] font-bold text-xs">
+                        SUI
                       </div>
-                      <div className="text-parchment">
-                        <span className="text-fog mr-2">WAL</span>
-                        {formatToken(payerWallet?.onchain?.wal || 0, 4)}
-                        {walUsd && payerWallet?.onchain?.wal && (
-                          <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payerWallet.onchain.wal * walUsd).toFixed(2)}
-                          </span>
+                      <div>
+                        <div className="text-parchment font-medium">
+                          {formatToken(payerWallet?.onchain?.sui || 0, 3)} SUI
+                        </div>
+                        {suiUsd && payerWallet?.onchain?.sui && (
+                          <div className="text-xs text-fog">
+                            ~${(payerWallet.onchain.sui * suiUsd).toFixed(2)}
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-green-400">
-                    <WalletIcon className="w-6 h-6" />
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-parchment/20 flex items-center justify-center text-parchment font-bold text-xs">
+                        WAL
+                      </div>
+                      <div>
+                        <div className="text-parchment font-medium">
+                          {formatToken(payerWallet?.onchain?.wal || 0, 4)} WAL
+                        </div>
+                        {walUsd && payerWallet?.onchain?.wal && (
+                          <div className="text-xs text-fog">
+                            ~${(payerWallet.onchain.wal * walUsd).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-fog">Available (USD)</span>
-                    <span className="text-parchment font-medium">
-                      {formatCurrency(payerWallet?.available || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-fog">Blocked (USD)</span>
-                    <span className="text-ember font-medium">
-                      {formatCurrency(payerWallet?.blocked || 0)}
-                    </span>
-                  </div>
+
                   <div className="flex justify-between text-sm pt-2 border-t border-white/10">
                     <span className="text-fog">Status</span>
                     <span
@@ -281,47 +261,43 @@ export function WalletPage() {
           >
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-fog mb-1">Payout Wallet</p>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-parchment">
-                        <span className="text-fog mr-2">SUI</span>
-                        {formatToken(payoutWallet?.onchain?.sui || 0, 3)}
-                        {suiUsd && payoutWallet?.onchain?.sui && (
-                          <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payoutWallet.onchain.sui * suiUsd).toFixed(2)}
-                          </span>
-                        )}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#3771E0]/20 flex items-center justify-center text-[#3771E0] font-bold text-xs">
+                        SUI
                       </div>
-                      <div className="text-parchment">
-                        <span className="text-fog mr-2">WAL</span>
-                        {formatToken(payoutWallet?.onchain?.wal || 0, 4)}
-                        {walUsd && payoutWallet?.onchain?.wal && (
-                          <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payoutWallet.onchain.wal * walUsd).toFixed(2)}
-                          </span>
+                      <div>
+                        <div className="text-parchment font-medium">
+                          {formatToken(payoutWallet?.onchain?.sui || 0, 3)} SUI
+                        </div>
+                        {suiUsd && payoutWallet?.onchain?.sui && (
+                          <div className="text-xs text-fog">
+                            ~${(payoutWallet.onchain.sui * suiUsd).toFixed(2)}
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-amber-400">
-                    <TrendingDown className="w-6 h-6" />
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-parchment/20 flex items-center justify-center text-parchment font-bold text-xs">
+                        WAL
+                      </div>
+                      <div>
+                        <div className="text-parchment font-medium">
+                          {formatToken(payoutWallet?.onchain?.wal || 0, 4)} WAL
+                        </div>
+                        {walUsd && payoutWallet?.onchain?.wal && (
+                          <div className="text-xs text-fog">
+                            ~${(payoutWallet.onchain.wal * walUsd).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-fog">Available (USD)</span>
-                    <span className="text-parchment font-medium">
-                      {formatCurrency(payoutWallet?.available || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-fog">Blocked (USD)</span>
-                    <span className="text-fog font-medium">
-                      {formatCurrency(payoutWallet?.blocked || 0)}
-                    </span>
-                  </div>
+
                   <div className="flex justify-between text-sm pt-2 border-t border-white/10">
                     <span className="text-fog">Status</span>
                     <span
@@ -352,58 +328,7 @@ export function WalletPage() {
           </motion.div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-medium text-parchment mb-6">
-                Wallet Balance Distribution
-              </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={walletPieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {walletPieData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#111111",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: "8px",
-                      color: "#E6E2DC",
-                    }}
-                    formatter={(value) => formatCurrency(Number(value))}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-white/40" />
-                  <span className="text-sm text-fog">Available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-ember" />
-                  <span className="text-sm text-fog">Blocked</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+
       </div>
 
       <Modal
@@ -584,8 +509,8 @@ export function WalletPage() {
           {withdrawStatus && (
             <div
               className={`mt-3 rounded-xl border px-4 py-3 text-sm ${withdrawStatus.tone === "success"
-                  ? "border-white/30 bg-white/10 text-parchment"
-                  : "border-ember/40 bg-ember/10 text-ember"
+                ? "border-white/30 bg-white/10 text-parchment"
+                : "border-ember/40 bg-ember/10 text-ember"
                 }`}
             >
               {withdrawStatus.message}

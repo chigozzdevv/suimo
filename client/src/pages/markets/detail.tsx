@@ -20,14 +20,19 @@ export function MarketDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copiedItem, setCopiedItem] = useState<string>("");
+  const [walUsd, setWalUsd] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const resources = await api.getCatalogResources();
+        const [resources, prices] = await Promise.all([
+          api.getCatalogResources(),
+          api.getPrices().catch(() => ({ wal_usd: null })),
+        ]);
         const found = resources.find((r) => r._id === id);
         if (!found) throw new Error("Resource not found");
         setResource(found);
+        setWalUsd(typeof prices.wal_usd === "number" ? prices.wal_usd : null);
       } catch (e: any) {
         setError(e.message || "Failed to load resource");
       } finally {
@@ -180,55 +185,55 @@ export function MarketDetailPage() {
               {/* Storage Information */}
               {((resource as any).walrus_blob_id ||
                 (resource as any).cipher_meta) && (
-                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
-                  <h2 className="text-xl font-semibold text-parchment mb-4">
-                    Storage Information
-                  </h2>
-                  <div className="space-y-4">
-                    {(resource as any).walrus_blob_id && (
-                      <div className="rounded-lg border border-white/5 bg-white/5 p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-xs uppercase tracking-wider text-white/40">
-                            Walrus Blob ID
+                  <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+                    <h2 className="text-xl font-semibold text-parchment mb-4">
+                      Storage Information
+                    </h2>
+                    <div className="space-y-4">
+                      {(resource as any).walrus_blob_id && (
+                        <div className="rounded-lg border border-white/5 bg-white/5 p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs uppercase tracking-wider text-white/40">
+                              Walrus Blob ID
+                            </div>
+                            <button
+                              onClick={() =>
+                                handleCopy(
+                                  (resource as any).walrus_blob_id,
+                                  "walrus_blob",
+                                )
+                              }
+                              className="flex items-center gap-1 text-xs text-fog hover:text-parchment transition"
+                            >
+                              {copiedItem === "walrus_blob" ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              {copiedItem === "walrus_blob" ? "Copied" : "Copy"}
+                            </button>
                           </div>
-                          <button
-                            onClick={() =>
-                              handleCopy(
-                                (resource as any).walrus_blob_id,
-                                "walrus_blob",
-                              )
-                            }
-                            className="flex items-center gap-1 text-xs text-fog hover:text-parchment transition"
-                          >
-                            {copiedItem === "walrus_blob" ? (
-                              <Check className="h-3 w-3" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            {copiedItem === "walrus_blob" ? "Copied" : "Copy"}
-                          </button>
-                        </div>
-                        <div className="text-parchment font-mono text-sm break-all">
-                          {(resource as any).walrus_blob_id}
-                        </div>
-                      </div>
-                    )}
-                    {(resource as any).cipher_meta && (
-                      <div className="rounded-lg border border-white/5 bg-white/5 p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Shield className="h-3.5 w-3.5 text-white/40" />
-                          <div className="text-xs uppercase tracking-wider text-white/40">
-                            Encryption
+                          <div className="text-parchment font-mono text-sm break-all">
+                            {(resource as any).walrus_blob_id}
                           </div>
                         </div>
-                        <div className="text-parchment font-medium uppercase">
-                          {(resource as any).cipher_meta.algo || "AES-256-GCM"}
+                      )}
+                      {(resource as any).cipher_meta && (
+                        <div className="rounded-lg border border-white/5 bg-white/5 p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield className="h-3.5 w-3.5 text-white/40" />
+                            <div className="text-xs uppercase tracking-wider text-white/40">
+                              Encryption
+                            </div>
+                          </div>
+                          <div className="text-parchment font-medium uppercase">
+                            {(resource as any).cipher_meta.algo || "AES-256-GCM"}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Preview */}
               {resource.sample_preview && (
@@ -258,15 +263,24 @@ export function MarketDetailPage() {
                     <div>
                       <div className="text-xs text-fog mb-1">Base Price</div>
                       <div className="text-3xl font-bold text-parchment">
-                        {formatCurrency(resource.price_flat)}
+                        {walUsd
+                          ? `${(resource.price_flat / walUsd).toFixed(4)} WAL`
+                          : formatCurrency(resource.price_flat)}
                       </div>
+                      {walUsd && (
+                        <div className="text-sm text-fog mt-1">
+                          ~{formatCurrency(resource.price_flat)}
+                        </div>
+                      )}
                     </div>
                   )}
                   {typeof resource.price_per_kb === "number" && (
                     <div className="pt-4 border-t border-white/10">
                       <div className="text-xs text-fog mb-1">Per Kilobyte</div>
                       <div className="text-xl font-semibold text-parchment">
-                        {formatCurrency(resource.price_per_kb)}
+                        {walUsd
+                          ? `${(resource.price_per_kb / walUsd).toFixed(6)} WAL/KB`
+                          : `${formatCurrency(resource.price_per_kb)}/KB`}
                       </div>
                     </div>
                   )}

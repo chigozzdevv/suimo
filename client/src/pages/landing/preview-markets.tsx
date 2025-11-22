@@ -9,12 +9,17 @@ export function PreviewMarkets() {
   const [items, setItems] = useState<CatalogResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [walUsd, setWalUsd] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.getCatalogResources();
+        const [data, prices] = await Promise.all([
+          api.getCatalogResources(),
+          api.getPrices().catch(() => ({ wal_usd: null })),
+        ]);
         setItems(data.slice(0, 8));
+        setWalUsd(typeof prices.wal_usd === "number" ? prices.wal_usd : null);
       } catch (err: any) {
         setError(err.message || "Failed to load preview");
       } finally {
@@ -104,12 +109,21 @@ export function PreviewMarkets() {
                   <div className="text-sm">
                     {typeof resource.price_flat === "number" && (
                       <div className="font-medium text-parchment">
-                        {formatCurrency(resource.price_flat)}
+                        {walUsd
+                          ? `${(resource.price_flat / walUsd).toFixed(4)} WAL`
+                          : formatCurrency(resource.price_flat)}
+                        {walUsd && (
+                          <span className="text-xs text-fog ml-1">
+                            (~{formatCurrency(resource.price_flat)})
+                          </span>
+                        )}
                       </div>
                     )}
                     {typeof resource.price_per_kb === "number" && (
                       <div className="text-xs text-fog">
-                        {formatCurrency(resource.price_per_kb)}/KB
+                        {walUsd
+                          ? `${(resource.price_per_kb / walUsd).toFixed(6)} WAL/KB`
+                          : `${formatCurrency(resource.price_per_kb)}/KB`}
                       </div>
                     )}
                   </div>

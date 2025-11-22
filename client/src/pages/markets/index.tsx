@@ -324,7 +324,7 @@ export function MarketsPage() {
                             </div>
                             {walUsd && (
                               <div className="text-xs text-fog">
-                                ${r.price_flat.toFixed(2)} USD
+                                ~${r.price_flat.toFixed(2)}
                               </div>
                             )}
                           </div>
