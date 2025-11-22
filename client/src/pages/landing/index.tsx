@@ -22,6 +22,9 @@ export function LandingPage() {
         <div className="container-outer py-16 md:py-20">
           <FeatureGrid />
         </div>
+        <div className="container-outer py-16 md:py-20">
+          <PreviewMarkets />
+        </div>
         <div className="container-outer">
           <SectionDivider className="my-16 md:my-20" />
         </div>
@@ -42,9 +45,6 @@ export function LandingPage() {
 
         <div className="container-outer py-16 md:py-20">
           <HowItWorks />
-        </div>
-        <div className="container-outer py-16 md:py-20">
-          <PreviewMarkets />
         </div>
         <div className="container-outer">
           <SectionDivider className="my-16 md:my-20" />
