@@ -9,7 +9,7 @@ import {
 } from "@mysten/sui/client";
 import { loadEnv } from "@/config/env.js";
 import { requireUser } from "@/middleware/auth.js";
-import { providerSigner } from "@/services/walrus/walrus.service.js";
+import { providerSigner } from "@/features/walrus/walrus.service.js";
 import { Agent, fetch as undiciFetch } from "undici";
 
 function pickFallbackRpc(primary?: string) {

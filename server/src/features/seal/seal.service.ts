@@ -45,7 +45,6 @@ export async function sealEncryptForPolicy(
   const packageId = Uint8Array.from(
     Buffer.from(policyPackageIdHex.replace(/^0x/, ""), "hex"),
   );
-  // For identity, use the resource id or server-generated id; placeholder zeros (caller should supply)
   const id = new Uint8Array(32);
   const { encryptedObject } = await sealEncrypt({
     keyServers,

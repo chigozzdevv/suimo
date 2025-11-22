@@ -11,8 +11,8 @@ import {
 } from "@/features/wallets/wallets.model.js";
 import { findProviderById } from "@/features/providers/providers.model.js";
 import { createSignedReceipt } from "@/features/receipts/receipts.model.js";
-import { getWalrusBlobChunks } from "@/services/walrus/walrus.service.js";
-import { sealDecryptForAccess } from "@/services/seal/seal.service.js";
+import { getWalrusBlobChunks } from "@/features/walrus/walrus.service.js";
+import { sealDecryptForAccess } from "@/features/seal/seal.service.js";
 import { findConnectorById } from "@/features/connectors/connectors.model.js";
 import { fetchViaConnector } from "@/features/connectors/connectors.service.js";
 import { checkSpendingCaps } from "@/features/caps/caps.service.js";
@@ -41,8 +41,8 @@ export async function discoverService(params: {
       typeof r.price_flat === "number" && r.price_flat > 0
         ? r.price_flat
         : typeof r.price_per_kb === "number" &&
-            r.price_per_kb > 0 &&
-            typeof r.size_bytes === "number"
+          r.price_per_kb > 0 &&
+          typeof r.size_bytes === "number"
           ? Number((r.price_per_kb * (r.size_bytes / 1024)).toFixed(6))
           : 0;
 
@@ -153,16 +153,16 @@ export async function fetchService(
   // Resolve or create an active agent context for this client/user
   let agent: any | null = agentId
     ? await agentsColl.findOne({
-        _id: agentId,
-        user_id: userId,
-        client_id: clientId,
-        status: { $ne: "revoked" },
-      } as any)
+      _id: agentId,
+      user_id: userId,
+      client_id: clientId,
+      status: { $ne: "revoked" },
+    } as any)
     : await agentsColl.findOne({
-        user_id: userId,
-        client_id: clientId,
-        status: { $ne: "revoked" },
-      } as any);
+      user_id: userId,
+      client_id: clientId,
+      status: { $ne: "revoked" },
+    } as any);
   if (!agent) {
     agent = await createAgent(
       userId,
@@ -434,18 +434,18 @@ export async function fetchService(
       splits:
         finalCost > 0
           ? ((): any[] => {
-              const bps = Number(process.env.PLATFORM_FEE_BPS || "0");
-              const fee = Number(((finalCost * bps) / 10000).toFixed(6));
-              return fee > 0
-                ? [
-                    {
-                      to: "wallet:provider_payout",
-                      amount: Number((finalCost - fee).toFixed(6)),
-                    },
-                    { to: "wallet:platform_fee", amount: fee },
-                  ]
-                : [{ to: "wallet:provider_payout", amount: finalCost }];
-            })()
+            const bps = Number(process.env.PLATFORM_FEE_BPS || "0");
+            const fee = Number(((finalCost * bps) / 10000).toFixed(6));
+            return fee > 0
+              ? [
+                {
+                  to: "wallet:provider_payout",
+                  amount: Number((finalCost - fee).toFixed(6)),
+                },
+                { to: "wallet:platform_fee", amount: fee },
+              ]
+              : [{ to: "wallet:provider_payout", amount: finalCost }];
+          })()
           : [],
       provider_onchain_tx: providerSettlementTx,
     };

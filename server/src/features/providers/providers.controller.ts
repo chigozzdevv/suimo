@@ -16,7 +16,7 @@ import {
   getProviderDomains,
   removeProviderDomain,
 } from "@/features/providers/providers.service.js";
-import { putWalrusBlobAsProvider } from "@/services/walrus/walrus.service.js";
+import { putWalrusBlobAsProvider } from "@/features/walrus/walrus.service.js";
 
 export async function createOrGetProviderController(
   req: FastifyRequest,

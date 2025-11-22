@@ -5,7 +5,7 @@ import {
   createResourceInput,
   updateResourceInput,
 } from "@/features/resources/resources.schema.js";
-import { deleteWalrusBlobObject } from "@/services/walrus/walrus.service.js";
+import { deleteWalrusBlobObject } from "@/features/walrus/walrus.service.js";
 import {
   listResourcesByProvider,
   createResourceForProvider,
