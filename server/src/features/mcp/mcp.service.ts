@@ -139,11 +139,10 @@ export async function fetchService(
     resourceId: string;
     mode: "raw" | "summary";
     constraints?: { maxCost?: number; maxBytes?: number };
-    payment_tx_digest?: string;
   },
   opts?: { settlementMode?: "internal" | "external" },
 ) {
-  const { userId, clientId, agentId, resourceId, mode, constraints, payment_tx_digest } = params;
+  const { userId, clientId, agentId, resourceId, mode, constraints } = params;
   const db = await getDb();
   const agentsColl = db.collection<any>("agents");
   // Resolve or create an active agent context for this client/user
@@ -258,30 +257,14 @@ export async function fetchService(
 
   const settlementMode = opts?.settlementMode ?? "internal";
 
+  let consumerPaymentTx: string | undefined;
   let walAmountRequired = 0;
   if (settlementMode === "internal" && estCost > 0 && !sameOwner) {
     try {
       const { walAmount, walUsdRate } = await calculateWalAmount(estCost);
       walAmountRequired = walAmount;
 
-      if (!payment_tx_digest) {
-        return {
-          status: 402 as const,
-          error: "PAYMENT_REQUIRED",
-          quote: estCost,
-          walAmount: walAmountRequired,
-          walUsdRate,
-        };
-      }
-
-      const walletKey = await findWalletKey(userId, "payer");
-      if (!walletKey?.public_key) {
-        return {
-          status: 400 as const,
-          error: "CONSUMER_WALLET_NOT_LINKED",
-        };
-      }
-
+      const { transferWalFromUser } = await import("@/features/payments/custodial-transfer.service.js");
       const platformKey = await findWalletKey("platform", "payout");
       if (!platformKey?.public_key) {
         return {
@@ -290,27 +273,22 @@ export async function fetchService(
         };
       }
 
-      const verified = await verifyWalPayment({
-        txDigest: payment_tx_digest,
-        expectedAmountWal: walAmountRequired,
-        senderAddress: walletKey.public_key,
-        platformAddress: platformKey.public_key,
-      });
-
-      if (!verified) {
-        return {
-          status: 402 as const,
-          error: "PAYMENT_VERIFICATION_FAILED",
-          quote: estCost,
-          walAmount: walAmountRequired,
-          walUsdRate,
-        };
-      }
+      consumerPaymentTx = await transferWalFromUser(
+        activeAgent.user_id,
+        platformKey.public_key,
+        walAmountRequired
+      );
     } catch (e: any) {
       if (String(e.message).includes("WAL_PRICE_UNAVAILABLE"))
         return {
           status: 503 as const,
           error: "PRICE_SERVICE_UNAVAILABLE",
+        };
+      if (String(e.message).includes("INSUFFICIENT_WAL_BALANCE"))
+        return {
+          status: 402 as const,
+          error: "INSUFFICIENT_WAL_BALANCE",
+          quote: estCost,
         };
       throw e;
     }
