@@ -35,6 +35,9 @@ const EnvSchema = z.object({
   SESSION_COOKIE_DOMAIN: z.string().optional(),
   SESSION_COOKIE_SECURE: z.string().optional(),
   SESSION_COOKIE_MAX_AGE: z.string().optional(),
+  // Keep-alive service
+  SERVER_URL: z.string().url().optional(),
+  ENABLE_KEEPALIVE: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
