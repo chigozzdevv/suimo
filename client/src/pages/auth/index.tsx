@@ -68,7 +68,7 @@ export function AuthPage() {
   const handleSignupBonusFlag = () => {
     try {
       window.localStorage.setItem(SIGNUP_BONUS_FLAG, "true");
-    } catch {}
+    } catch { }
     if (redirectIfNeeded()) {
       return;
     }
@@ -152,21 +152,19 @@ export function AuthPage() {
           <div className="mb-8 grid grid-cols-2 gap-2 rounded-xl bg-white/5 p-1">
             <button
               onClick={() => setMode("login")}
-              className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                mode === "login"
+              className={`rounded-lg py-2 text-sm font-medium transition-colors ${mode === "login"
                   ? "bg-blue-600 text-white hover:bg-blue-500"
                   : "text-fog hover:text-parchment"
-              }`}
+                }`}
             >
               Login
             </button>
             <button
               onClick={() => setMode("signup")}
-              className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                mode === "signup"
+              className={`rounded-lg py-2 text-sm font-medium transition-colors ${mode === "signup"
                   ? "bg-blue-600 text-white hover:bg-blue-500"
                   : "text-fog hover:text-parchment"
-              }`}
+                }`}
             >
               Sign Up
             </button>
@@ -274,7 +272,7 @@ export function AuthPage() {
                     <div className="w-full border-t border-white/10" />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="bg-[#111111] px-2 text-fog">or</span>
+                    <span className="bg-[#0e1120] px-2 text-fog">or</span>
                   </div>
                 </div>
 

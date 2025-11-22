@@ -48,6 +48,7 @@ export function WalletPage() {
     message: string;
   } | null>(null);
   const [walUsd, setWalUsd] = useState<number | null>(null);
+  const [suiUsd, setSuiUsd] = useState<number | null>(null);
 
   useEffect(() => {
     loadWallets();
@@ -58,10 +59,11 @@ export function WalletPage() {
     try {
       const [data, prices] = await Promise.all([
         api.getWallets(),
-        api.getPrices().catch(() => ({ wal_usd: null })),
+        api.getPrices().catch(() => ({ wal_usd: null, sui_usd: null })),
       ]);
       setWallets(data);
       setWalUsd(typeof prices.wal_usd === "number" ? prices.wal_usd : null);
+      setSuiUsd(typeof prices.sui_usd === "number" ? prices.sui_usd : null);
     } catch (err: any) {
       setError(err.message || "Failed to load wallets");
     } finally {
@@ -148,7 +150,7 @@ export function WalletPage() {
       try {
         const st = await api.getPinStatus();
         setPinStatus(st);
-      } catch {}
+      } catch { }
     } finally {
       setWithdrawSubmitting(false);
     }
@@ -215,9 +217,9 @@ export function WalletPage() {
                       <div className="text-parchment">
                         <span className="text-fog mr-2">SUI</span>
                         {formatToken(payerWallet?.onchain?.sui || 0, 3)}
-                        {walUsd && payerWallet?.onchain?.sui && (
+                        {suiUsd && payerWallet?.onchain?.sui && (
                           <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payerWallet.onchain.sui * 0.5).toFixed(2)}
+                            ≈ ${(payerWallet.onchain.sui * suiUsd).toFixed(2)}
                           </span>
                         )}
                       </div>
@@ -286,9 +288,9 @@ export function WalletPage() {
                       <div className="text-parchment">
                         <span className="text-fog mr-2">SUI</span>
                         {formatToken(payoutWallet?.onchain?.sui || 0, 3)}
-                        {walUsd && payoutWallet?.onchain?.sui && (
+                        {suiUsd && payoutWallet?.onchain?.sui && (
                           <span className="ml-2 text-xs text-fog">
-                            ≈ ${(payoutWallet.onchain.sui * 0.5).toFixed(2)}
+                            ≈ ${(payoutWallet.onchain.sui * suiUsd).toFixed(2)}
                           </span>
                         )}
                       </div>
@@ -338,7 +340,7 @@ export function WalletPage() {
                       try {
                         const st = await api.getPinStatus();
                         setPinStatus(st);
-                      } catch {}
+                      } catch { }
                     }}
                   >
                     <ArrowUpRight className="w-4 h-4" />
@@ -581,11 +583,10 @@ export function WalletPage() {
           </Button>
           {withdrawStatus && (
             <div
-              className={`mt-3 rounded-xl border px-4 py-3 text-sm ${
-                withdrawStatus.tone === "success"
+              className={`mt-3 rounded-xl border px-4 py-3 text-sm ${withdrawStatus.tone === "success"
                   ? "border-white/30 bg-white/10 text-parchment"
                   : "border-ember/40 bg-ember/10 text-ember"
-              }`}
+                }`}
             >
               {withdrawStatus.message}
             </div>

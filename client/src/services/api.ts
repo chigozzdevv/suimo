@@ -72,6 +72,7 @@ export interface Wallet {
 
 export interface PricesResponse {
   wal_usd: number | null;
+  sui_usd: number | null;
 }
 
 export interface Provider {
@@ -267,9 +268,9 @@ export interface Deposit {
 
 export type ConnectorPayload =
   | {
-      type: "api_key";
-      config: { header?: string; scheme?: string; token: string };
-    }
+    type: "api_key";
+    config: { header?: string; scheme?: string; token: string };
+  }
   | { type: "jwt"; config: { header?: string; token: string } }
   | { type: "oauth"; config: { access_token: string } }
   | { type: "internal"; config: Record<string, never> };
@@ -758,7 +759,7 @@ class ApiService {
     try {
       const r = await this.getSealKeyServers();
       serverList = Array.isArray(r) ? r : [];
-    } catch {}
+    } catch { }
     if (!serverList.length) throw new Error("SEAL_KEY_SERVERS_UNAVAILABLE");
 
     const keyServers = await retrieveKeyServers({

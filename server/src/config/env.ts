@@ -15,6 +15,7 @@ const EnvSchema = z.object({
   WAL_COIN_TYPE: z.string().optional(),
   WAL_DECIMALS: z.string().optional(),
   WAL_USD_RATE: z.string().optional(),
+  SUI_USD_RATE: z.string().optional(),
   SUI_PAYTO: z.string().optional(),
   WALRUS_NETWORK: z.string().optional(),
   WALRUS_RELAY_URL: z.string().optional(),
