@@ -16,6 +16,7 @@
     "@mysten/seal": "^0.1.0",
     "@mysten/sui": "^1.45.0",
     "@mysten/walrus": "^0.1.0",
+    "@types/node": "^24.10.0",
     "argon2": "^0.44.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.1",
@@ -31,7 +32,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
     "tsc-alias": "^1.8.8"
   }
 }
