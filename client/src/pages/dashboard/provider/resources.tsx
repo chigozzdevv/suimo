@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { api } from '@/services/api';
 import type { Resource, Connector, Domain } from '@/services/api';
-import { Plus, FileText, CheckCircle, Edit, Trash2, Loader2, Upload, RefreshCw, ChevronDown } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Trash2, Loader2, Upload, RefreshCw, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type ResourceFormState = {
@@ -85,6 +85,23 @@ export function ResourcesPage() {
   useEffect(() => {
     loadPage();
   }, []);
+
+  const DEFAULT_CATEGORIES = [
+    'healthcare',
+    'finance',
+    'technology',
+    'research',
+    'education',
+    'legal',
+    'marketing',
+    'real-estate',
+    'entertainment',
+    'social-media',
+    'e-commerce',
+    'analytics',
+  ];
+
+  const allCategories = [...new Set([...categoryOptions, ...DEFAULT_CATEGORIES])];
 
   const loadPage = async () => {
     setIsLoading(true);
@@ -182,9 +199,9 @@ export function ResourcesPage() {
         sample_preview: resourceForm.samplePreview || undefined,
         tags: resourceForm.tags
           ? resourceForm.tags
-              .split(',')
-              .map((tag) => tag.trim())
-              .filter(Boolean)
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean)
           : undefined,
         price_flat:
           (resourceForm.type !== 'site' || resourceForm.flatFeeEnabled) && resourceForm.priceFlat
@@ -308,8 +325,8 @@ export function ResourcesPage() {
           value={
             resources.length > 0
               ? formatCurrency(
-                  resources.reduce((sum, r) => sum + (r.price_flat || r.price_per_kb || 0), 0) / resources.length
-                )
+                resources.reduce((sum, r) => sum + (r.price_flat || r.price_per_kb || 0), 0) / resources.length
+              )
               : '$0.00'
           }
           helper="Per listing"
@@ -332,92 +349,128 @@ export function ResourcesPage() {
                   return (
                     <div
                       key={resource._id}
-                      className="rounded-2xl border border-white/10 bg-white/5 p-4 transition-colors hover:border-white/30"
+                      className="rounded-2xl border border-white/10 bg-white/5 transition-colors hover:border-white/30"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-parchment font-semibold">{resource.title}</h3>
-                          {resource.verified && <CheckCircle className="h-4 w-4 text-parchment" />}
-                          <span
-                            className={`rounded px-2 py-0.5 text-xs ${
-                              resource.visibility === 'restricted' ? 'bg-ember/10 text-ember' : 'bg-white/5 text-parchment'
-                            }`}
-                          >
-                            {resource.visibility || 'public'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                  {resource.size_bytes && (resource as any).walrus_blob_id && (
-                    <Button
-                      variant="ghost"
-                      className="h-9 px-3"
-                      onClick={async () => {
-                        setExtendResource(resource);
-                        setExtendAddEpochs('1');
-                        setExtendQuote(null);
-                        setExtendOpen(true);
-                        try {
-                          const q = await api.getWalrusExtendQuote({ size_bytes: resource.size_bytes!, add_epochs: 1 });
-                          setExtendQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes });
-                        } catch { setExtendQuote(null); }
-                      }}
-                    >
-                      Extend
-                    </Button>
-                  )}
-                          <Button
-                            variant="ghost"
-                            className="h-9 px-3"
-                            onClick={() => {
-                              // TODO: Implement edit modal
-                              setError('Edit functionality coming soon');
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="h-9 px-3 text-ember hover:text-ember"
-                            onClick={async () => {
-                              if (!window.confirm(`Delete "${resource.title}"? This action cannot be undone.`)) return;
-                              try {
-                                await api.deleteResource(resource._id);
-                                await loadPage();
-                              } catch (err: any) {
-                                setError(err.message || 'Failed to delete resource');
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fog">
-                        <span className="rounded bg-white/5 px-2 py-1">{resource.type}</span>
-                        <span className="rounded bg-white/5 px-2 py-1 uppercase">{resource.format}</span>
-                        {resource.domain && <span>{resource.domain}</span>}
-                        {typeof resource.price_flat === 'number' && (
-                          <span className="text-parchment">{formatCurrency(resource.price_flat)}</span>
-                        )}
-                        {typeof resource.price_per_kb === 'number' && (
-                          <span className="text-parchment">{formatCurrency(resource.price_per_kb)}/KB</span>
-                        )}
-                      </div>
-                      {preview && (
-                        <div className="mt-4 rounded-lg border border-white/5 bg-white/5 p-3 text-xs text-fog">
-                          <div className="flex items-center justify-between text-[11px] uppercase tracking-widest text-white/40">
-                            <span>Preview</span>
+                      {/* Compact Header - Always Visible */}
+                      <div className="p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
                             <button
-                              className="text-[11px] text-parchment hover:text-parchment/80"
-                              onClick={() =>
-                                setExpandedResourceId(isExpanded ? null : resource._id)
-                              }
+                              onClick={() => setExpandedResourceId(isExpanded ? null : resource._id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-fog transition hover:border-white/30 hover:text-parchment"
                             >
-                              {isExpanded ? 'Hide' : 'Expand'}
+                              <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                             </button>
-                          
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-parchment font-semibold">{resource.title}</h3>
+                                {resource.verified && <CheckCircle className="h-4 w-4 text-parchment" />}
+                                <span
+                                  className={`rounded px-2 py-0.5 text-xs ${resource.visibility === 'restricted' ? 'bg-ember/10 text-ember' : 'bg-white/5 text-parchment'
+                                    }`}
+                                >
+                                  {resource.visibility || 'public'}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fog">
+                                <span className="rounded bg-white/5 px-2 py-1">{resource.type}</span>
+                                <span className="rounded bg-white/5 px-2 py-1 uppercase">{resource.format}</span>
+                                {resource.domain && <span>{resource.domain}</span>}
+                                {typeof resource.price_flat === 'number' && (
+                                  <span className="text-parchment">{formatCurrency(resource.price_flat)}</span>
+                                )}
+                                {typeof resource.price_per_kb === 'number' && (
+                                  <span className="text-parchment">{formatCurrency(resource.price_per_kb)}/KB</span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <p className={`mt-2 whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-3'}`}>{preview}</p>
+                          <div className="flex items-center gap-2">
+                            {(resource.type === 'file' || resource.type === 'dataset') && resource.size_bytes && (
+                              <Button
+                                variant="ghost"
+                                className="h-9 px-3"
+                                onClick={async () => {
+                                  setExtendResource(resource);
+                                  setExtendAddEpochs('1');
+                                  setExtendQuote(null);
+                                  setExtendOpen(true);
+                                  try {
+                                    const q = await api.getWalrusExtendQuote({ size_bytes: resource.size_bytes!, add_epochs: 1 });
+                                    setExtendQuote({ wal_est: q.wal_est, sui_est: q.sui_est, encoded_bytes: q.encoded_bytes });
+                                  } catch { setExtendQuote(null); }
+                                }}
+                              >
+                                Extend
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              className="h-9 px-3 text-ember hover:text-ember"
+                              onClick={async () => {
+                                if (!window.confirm(`Delete "${resource.title}"? This action cannot be undone.`)) return;
+                                try {
+                                  await api.deleteResource(resource._id);
+                                  await loadPage();
+                                } catch (err: any) {
+                                  setError(err.message || 'Failed to delete resource');
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div className="border-t border-white/10 p-4 pt-3">
+                          {(resource.type === 'file' || resource.type === 'dataset') && (
+                            <div className="mb-3 grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
+                              {(resource as any).walrus_blob_id && (
+                                <div className="rounded-lg border border-white/5 bg-white/5 p-2">
+                                  <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Blob ID</div>
+                                  <div className="truncate text-parchment font-mono text-[11px]" title={(resource as any).walrus_blob_id}>
+                                    {(resource as any).walrus_blob_id.substring(0, 12)}...
+                                  </div>
+                                </div>
+                              )}
+                              {resource.size_bytes && (
+                                <div className="rounded-lg border border-white/5 bg-white/5 p-2">
+                                  <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Size</div>
+                                  <div className="text-parchment">
+                                    {resource.size_bytes < 1024
+                                      ? `${resource.size_bytes} B`
+                                      : resource.size_bytes < 1024 * 1024
+                                        ? `${(resource.size_bytes / 1024).toFixed(1)} KB`
+                                        : `${(resource.size_bytes / (1024 * 1024)).toFixed(2)} MB`}
+                                  </div>
+                                </div>
+                              )}
+                              {(resource as any).cipher_meta && (
+                                <div className="rounded-lg border border-white/5 bg-white/5 p-2">
+                                  <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Encrypted</div>
+                                  <div className="text-parchment uppercase">{(resource as any).cipher_meta.algo || 'AES'}</div>
+                                </div>
+                              )}
+                              {typeof (resource as any).deletable === 'boolean' && (
+                                <div className="rounded-lg border border-white/5 bg-white/5 p-2">
+                                  <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Deletable</div>
+                                  <div className={`font-medium ${(resource as any).deletable ? 'text-green-400' : 'text-red-400'}`}>
+                                    {(resource as any).deletable ? 'Yes' : 'No'}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {preview && (
+                            <div className="rounded-lg border border-white/5 bg-white/5 p-3 text-xs text-fog">
+                              <div className="mb-2 text-[11px] uppercase tracking-widest text-white/40">Preview</div>
+                              <p className="whitespace-pre-wrap">{preview}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -546,26 +599,26 @@ export function ResourcesPage() {
                   setCategoryOpen(true);
                 }}
                 onFocus={() => setCategoryOpen(true)}
-                placeholder="Search or enter a new category"
+                placeholder="Type to search or create new category"
                 className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none"
               />
               {categoryOpen && (
                 <div className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-white/10 bg-[#121212]/95 p-1 shadow-2xl backdrop-blur">
-                  {resourceForm.category && !categoryOptions.some((c) => String(c).toLowerCase() === String(resourceForm.category).toLowerCase()) && (
+                  {resourceForm.category && !allCategories.some((c) => String(c).toLowerCase() === String(resourceForm.category).toLowerCase()) && (
                     <button
                       type="button"
-                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-parchment hover:bg-white/10"
+                      className="w-full rounded-xl px-3 py-2 text-left text-sm text-parchment hover:bg-white/10 flex items-center gap-2"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setCategoryOpen(false);
                       }}
                     >
-                      Use “{resourceForm.category}”
+                      <span className="text-green-400">+</span> Create "{resourceForm.category}"
                     </button>
                   )}
-                  {categoryOptions
+                  {allCategories
                     .filter((c) => !resourceForm.category || String(c).toLowerCase().includes(String(resourceForm.category).toLowerCase()))
-                    .slice(0, 8)
+                    .slice(0, 12)
                     .map((c) => (
                       <button
                         key={c}
@@ -580,9 +633,6 @@ export function ResourcesPage() {
                         {c}
                       </button>
                     ))}
-                  {categoryOptions.length === 0 && (
-                    <div className="px-3 py-2 text-sm text-fog">No suggestions yet</div>
-                  )}
                 </div>
               )}
             </div>
@@ -712,9 +762,8 @@ export function ResourcesPage() {
                       step="0.01"
                       value={resourceForm.priceFlat}
                       onChange={(e) => setResourceForm({ ...resourceForm, priceFlat: e.target.value })}
-                      className={`w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none ${
-                        resourceForm.flatFeeEnabled ? '' : 'opacity-50 pointer-events-none'
-                      }`}
+                      className={`w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-parchment focus:border-white/40 focus:outline-none ${resourceForm.flatFeeEnabled ? '' : 'opacity-50 pointer-events-none'
+                        }`}
                       placeholder="e.g. 0.50"
                       disabled={!resourceForm.flatFeeEnabled}
                     />
@@ -843,6 +892,43 @@ export function ResourcesPage() {
               )}
             </div>
           </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="ghost" onClick={() => { setExtendOpen(false); setExtendResource(null); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!extendResource) return;
+                setFormSubmitting(true);
+                setError('');
+                try {
+                  const epochs = Math.max(1, parseInt(extendAddEpochs || '1', 10) || 1);
+                  await api.extendWalrusStorage({
+                    resource_id: extendResource._id,
+                    add_epochs: epochs,
+                  });
+                  setExtendOpen(false);
+                  setExtendResource(null);
+                  await loadPage();
+                } catch (err: any) {
+                  setError(err.message || 'Failed to extend storage');
+                } finally {
+                  setFormSubmitting(false);
+                }
+              }}
+              disabled={formSubmitting}
+              className="gap-2"
+            >
+              {formSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Extending...
+                </>
+              ) : (
+                'Extend Storage'
+              )}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>
@@ -914,9 +1000,8 @@ function FancySelect({
                   onChange(opt.value);
                   setOpen(false);
                 }}
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
-                  isActive ? 'bg-white/10 text-parchment' : 'text-parchment hover:bg-white/10'
-                }`}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${isActive ? 'bg-white/10 text-parchment' : 'text-parchment hover:bg-white/10'
+                  }`}
               >
                 {opt.label}
               </button>

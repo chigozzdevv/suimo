@@ -49,16 +49,8 @@ export function Hero() {
         </div>
 
         <Modal open={demoOpen} title="Watch demo" onClose={() => setDemoOpen(false)}>
-          <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
-            <iframe
-              className="absolute inset-0 h-full w-full rounded-xl"
-              src="https://www.youtube.com/embed/kCZEhzAP35I"
-              title="Suimo MCP Demo | Custodial USDC on SUI"
-              frameBorder={0}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-            />
+          <div className="relative w-full flex items-center justify-center py-20">
+            <p className="text-fog">Video coming soon...</p>
           </div>
         </Modal>
       </div>

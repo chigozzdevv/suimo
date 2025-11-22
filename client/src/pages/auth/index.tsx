@@ -119,14 +119,9 @@ export function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-ink p-4 text-parchment">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-sand/5 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-ember/5 blur-3xl" />
-      </div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-md">
-        <div className="rounded-2xl border border-white/10 bg-[#111111]/85 p-8 backdrop-blur">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#0e1120] p-4 text-parchment">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+        <div className="rounded-2xl p-8 bg-[#0e1120]" style={{ outline: '0.5px solid rgba(255, 255, 255, 0.3)' }}>
           <div className="mb-8 flex items-center justify-between">
             <button
               onClick={() => {

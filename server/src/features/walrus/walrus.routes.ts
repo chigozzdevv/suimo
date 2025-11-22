@@ -67,7 +67,7 @@ export async function registerWalrusRoutes(app: FastifyInstance) {
       const userId = (req as any).userId as string
       const signer = await providerSigner(userId, 'payer')
       const owner = signer.toSuiAddress()
-      ;(req as any).log?.info?.({ owner, network, rpc }, 'walrus_quote_owner')
+        ; (req as any).log?.info?.({ owner, network, rpc }, 'walrus_quote_owner')
       const fakeBlobId = blobIdFromInt(1n)
       const rootHash = new Uint8Array([1])
       const tx = walrus.registerBlobTransaction({
@@ -78,7 +78,7 @@ export async function registerWalrusRoutes(app: FastifyInstance) {
         deletable: Boolean(deletable ?? true),
         owner,
       })
-      ;(tx as any).setSenderIfNotSet(owner)
+        ; (tx as any).setSenderIfNotSet(owner)
       const bytes = await (tx as any).build({ client: sui, onlyTransactionKind: true })
       const dry = await sui.dryRunTransactionBlock({ transactionBlock: bytes })
       const comp = BigInt(dry.effects.gasUsed.computationCost)
@@ -132,6 +132,56 @@ export async function registerWalrusRoutes(app: FastifyInstance) {
         write: Number(toUi(writeCost).toFixed(6)),
       },
       sui_est: null,
+    }
+  })
+
+  r.post('/walrus/extend', {
+    schema: {
+      body: z.object({
+        resource_id: z.string(),
+        add_epochs: z.number().int().positive().max(53),
+      })
+    },
+    preHandler: requireUser,
+  }, async (req, reply) => {
+    const { resource_id, add_epochs } = req.body as any
+    const env = loadEnv()
+    const network = env.WALRUS_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'
+    let rpc = process.env.SUI_RPC_URL || env.SUI_RPC_URL || getFullnodeUrl('testnet')
+    let sui = makeSuiClient(rpc)
+    try { await sui.getProtocolConfig() } catch (e) {
+      if (isConnectTimeoutError(e)) { rpc = pickFallbackRpc(rpc); sui = makeSuiClient(rpc) }
+    }
+
+    const walrus = new WalrusClient({ network, suiClient: sui as any })
+    const userId = (req as any).userId as string
+    const signer = await providerSigner(userId, 'payer')
+
+    // Get resource to find blob object ID
+    const { findResourceById } = await import('@/features/resources/resources.model.js')
+    const resource = await findResourceById(resource_id)
+    if (!resource) return reply.code(404).send({ error: 'Resource not found' })
+    if (resource.provider_id !== userId) return reply.code(403).send({ error: 'Not your resource' })
+
+    const blobObjectId = (resource as any).walrus_blob_object_id
+    if (!blobObjectId) return reply.code(400).send({ error: 'Resource has no Walrus blob' })
+
+    const owner = signer.toSuiAddress()
+
+    try {
+      await walrus.executeExtendBlobTransaction({
+        signer: signer as any,
+        blobObjectId,
+        owner,
+        epochs: add_epochs,
+      })
+      return { ok: true }
+    } catch (e: any) {
+      const msg = String(e?.message || 'EXTEND_FAILED')
+      if (msg.includes('INSUFFICIENT') || msg.includes('Not enough coins')) {
+        return reply.code(402).send({ error: 'INSUFFICIENT_WAL_OR_SUI' })
+      }
+      throw e
     }
   })
 }

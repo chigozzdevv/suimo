@@ -13,7 +13,6 @@ function getClients(rpcOverride?: string) {
   const rpc = rpcOverride || env.SUI_RPC_URL || getFullnodeUrl('testnet');
   const network = (env.WALRUS_NETWORK === 'mainnet' ? 'mainnet' : 'testnet') as 'mainnet' | 'testnet';
 
-  // Configurable timeouts with fallbacks
   const uploadTimeout = parseInt(env.WALRUS_UPLOAD_TIMEOUT_MS || '180000', 10);
   const connectTimeout = parseInt(env.WALRUS_CONNECT_TIMEOUT_MS || '45000', 10);
 
@@ -43,51 +42,67 @@ function getClients(rpcOverride?: string) {
   return { sui, walrus };
 }
 
-function pickFallbackRpc(primary?: string) {
-  const publicNode = 'https://sui-testnet-rpc.publicnode.com';
-  const chainbase = 'https://testnet-rpc.sui.chainbase.online';
-  if (!primary) return publicNode;
-  return primary.includes('chainbase') ? publicNode : chainbase;
-}
+async function uploadViaHttpPublisher(
+  data: Uint8Array,
+  signer: any,
+  opts: { deletable?: boolean; epochs?: number; owner?: string },
+): Promise<{ id: string; objectId: string; size: number }> {
+  const env = loadEnv();
+  const epochs = opts?.epochs ?? 1;
 
-function candidateRpcs(primary?: string): string[] {
-  const base = primary || getFullnodeUrl('testnet');
-  const list = [
-    base,
-    pickFallbackRpc(base),
-    'https://api.us1.shinami.com/sui/node/v1/us1_sui_testnet_3dbbd061b67242df938d13ae4f8b7873',
-    'https://sui-testnet-endpoint.blockvision.org',
-    'https://rpc.ankr.com/sui_testnet',
+  const publishers = [
+    'https://publisher.walrus-testnet.walrus.space',
+    'https://wal-publisher-testnet.staketab.org',
+    'https://walrus-testnet-publisher.chainbase.online',
+    'https://sui-walrus-testnet-publisher.bwarelabs.com',
+    'https://publisher.walrus.banansen.dev',
   ];
-  return Array.from(new Set(list.filter(Boolean)));
-}
 
-async function selectRpc(desired?: string): Promise<string> {
-  const list = [desired, pickFallbackRpc(desired), 'https://api.us1.shinami.com/sui/node/v1/us1_sui_testnet_3dbbd061b67242df938d13ae4f8b7873', 'https://sui-testnet-endpoint.blockvision.org', 'https://rpc.ankr.com/sui_testnet']
-    .filter(Boolean) as string[];
-  const body = JSON.stringify({ jsonrpc: '2.0', method: 'suix_getReferenceGasPrice', params: [], id: 1 });
-  for (const url of list) {
+  console.log('[Walrus HTTP] Attempting direct HTTP publisher upload...');
+  let lastError: any;
+
+  for (const publisherUrl of publishers) {
     try {
-      const probeAgent = new Agent({ connectTimeout: 3000, headersTimeout: 8000 });
-      const res = await undiciFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body, dispatcher: probeAgent } as any);
-      if (res.ok) return url;
-    } catch { }
+      console.log(`[Walrus HTTP] Trying publisher: ${publisherUrl}`);
+      const uploadStart = Date.now();
+
+      const response = await undiciFetch(`${publisherUrl}/v1/blobs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: data,
+        dispatcher: new Agent({ connectTimeout: 30000, headersTimeout: 180000 }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Publisher returned ${response.status}: ${text}`);
+      }
+
+      const result = await response.json() as any;
+      console.log(`[Walrus HTTP] ✓ HTTP upload succeeded in ${Date.now() - uploadStart}ms`);
+      console.log(`[Walrus HTTP] Response:`, JSON.stringify(result).substring(0, 200));
+
+      const blobId = result.newlyCreated?.blobObject?.blobId || result.alreadyCertified?.blobId;
+      const objectId = result.newlyCreated?.blobObject?.id || result.alreadyCertified?.blobObject?.id;
+
+      if (!blobId || !objectId) {
+        throw new Error('Could not extract blob ID from publisher response');
+      }
+
+      console.log(`[Walrus HTTP] ✓ BlobId: ${blobId}, ObjectId: ${objectId}`);
+      return { id: blobId, objectId, size: data.byteLength };
+
+    } catch (error: any) {
+      console.error(`[Walrus HTTP] ✗ Publisher ${publisherUrl} failed: ${error.message}`);
+      lastError = error;
+      continue; // Try next publisher
+    }
   }
-  return desired || 'https://sui-testnet-rpc.publicnode.com';
+
+  throw new Error(`All HTTP publishers failed. Last error: ${lastError?.message}`);
 }
 
-function isConnectTimeoutError(err: any): boolean {
-  const msg = String(err?.message || err || '').toLowerCase();
-  return (
-    msg.includes('connect timeout') ||
-    msg.includes('timeout:') ||
-    msg.includes('etimedout') ||
-    msg.includes('fetch failed')
-  );
-}
-
-async function uploadWithClients(
-  walrus: any,
+async function uploadBlob(
   signer: any,
   data: Uint8Array,
   opts: { deletable?: boolean; epochs?: number; owner?: string },
@@ -95,107 +110,9 @@ async function uploadWithClients(
 ): Promise<{ id: string; objectId: string; size: number }> {
   const deletable = opts?.deletable ?? true;
   const epochs = opts?.epochs ?? 1;
-  const env = loadEnv();
-  const maxRetries = parseInt(env.WALRUS_MAX_RETRIES || '5', 10);
-  const concurrency = parseInt(env.WALRUS_CONCURRENCY || '16', 10);
 
   console.log(`[Walrus Upload] Starting upload - Size: ${(data.byteLength / 1024 / 1024).toFixed(2)}MB, Epochs: ${epochs}, Deletable: ${deletable}`);
-
-  try {
-    console.log('[Walrus Upload] Attempting direct writeBlob...');
-    const startTime = Date.now();
-    const res = await walrus.writeBlob({ blob: data, deletable, epochs, signer, owner });
-    const objectId = res.blobObject.id.id as string;
-    console.log(`[Walrus Upload] ✓ Direct writeBlob succeeded in ${Date.now() - startTime}ms - BlobId: ${res.blobId}`);
-    return { id: res.blobId, objectId, size: data.byteLength };
-  } catch (e: any) {
-    console.error(`[Walrus Upload] ✗ Direct writeBlob failed: ${e.message}`);
-    if (isConnectTimeoutError(e)) {
-      console.error('[Walrus Upload] ✗ Timeout during writeBlob - aborting');
-      throw e;
-    }
-
-    console.log('[Walrus Upload] Falling back to manual encode/upload/certify flow...');
-    try {
-      console.log('[Walrus Upload] Step 1: Encoding blob...');
-      const encodeStart = Date.now();
-      const { sliversByNode, blobId, metadata, rootHash } = await walrus.encodeBlob(data);
-      console.log(`[Walrus Upload] ✓ Encoded blob in ${Date.now() - encodeStart}ms - BlobId: ${blobId}, StorageNodes: ${sliversByNode.length}`);
-
-      console.log('[Walrus Upload] Step 2: Registering blob on-chain...');
-      const regStart = Date.now();
-      const reg = await walrus.executeRegisterBlobTransaction({ signer, size: data.length, epochs, blobId, rootHash, deletable, owner });
-      const blobObjectId = reg.blob.id.id as string;
-      console.log(`[Walrus Upload] ✓ Registered blob in ${Date.now() - regStart}ms - ObjectId: ${blobObjectId}`);
-
-      const confirmations: Array<any | null> = new Array(sliversByNode.length).fill(null);
-
-      console.log(`[Walrus Upload] Step 3: Uploading to storage nodes (concurrency: ${concurrency}, max retries: ${maxRetries})...`);
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const attemptStart = Date.now();
-        let uploadedCount = 0;
-        let failedCount = 0;
-
-        for (let i = 0; i < sliversByNode.length; i += concurrency) {
-          const tasks: Promise<void>[] = [];
-          for (let j = i; j < Math.min(i + concurrency, sliversByNode.length); j++) {
-            if (confirmations[j] != null) continue;
-            tasks.push(
-              walrus
-                .writeEncodedBlobToNode({
-                  nodeIndex: j,
-                  blobId,
-                  metadata,
-                  slivers: sliversByNode[j],
-                  deletable,
-                  objectId: blobObjectId,
-                })
-                .then((c: any) => {
-                  if (c) {
-                    confirmations[j] = c;
-                    uploadedCount++;
-                  }
-                })
-                .catch((err: any) => {
-                  failedCount++;
-                  console.error(`[Walrus Upload] Node ${j} upload failed: ${err.message}`);
-                })
-            );
-          }
-          if (tasks.length) await Promise.all(tasks);
-        }
-
-        const confirmedCount = confirmations.filter(c => c != null).length;
-        console.log(`[Walrus Upload] Attempt ${attempt}/${maxRetries}: ${confirmedCount}/${sliversByNode.length} nodes confirmed (uploaded: ${uploadedCount}, failed: ${failedCount}) in ${Date.now() - attemptStart}ms`);
-
-        try {
-          console.log('[Walrus Upload] Step 4: Certifying blob...');
-          const certifyStart = Date.now();
-          await walrus.executeCertifyBlobTransaction({ signer, blobId, blobObjectId, confirmations, deletable });
-          console.log(`[Walrus Upload] ✓ Upload complete in ${Date.now() - certifyStart}ms - BlobId: ${blobId}`);
-          return { id: blobId, objectId: blobObjectId, size: data.byteLength };
-        } catch (err: any) {
-          console.error(`[Walrus Upload] ✗ Certify failed on attempt ${attempt}: ${err.message}`);
-          if (isConnectTimeoutError(err)) {
-            console.error('[Walrus Upload] ✗ Timeout during certify - aborting');
-            throw err;
-          }
-          if (attempt === maxRetries) {
-            console.error('[Walrus Upload] ✗ Max retries exceeded for certify');
-            throw new Error('Failed to certify blob after ' + maxRetries + ' attempts');
-          }
-          const backoffMs = 2000 * Math.pow(2, attempt - 1); // 2s, 4s, 8s, 16s, 32s
-          console.log(`[Walrus Upload] Retrying certify in ${backoffMs}ms...`);
-          await new Promise((r) => setTimeout(r, backoffMs));
-        }
-      }
-      throw new Error('Unexpected upload failure');
-    } catch (inner: any) {
-      console.error(`[Walrus Upload] ✗ Manual flow failed: ${inner.message}`);
-      if (isConnectTimeoutError(inner)) throw inner;
-      throw inner;
-    }
-  }
+  return await uploadViaHttpPublisher(data, signer, opts);
 }
 
 function platformSigner(): Ed25519Keypair {
@@ -244,41 +161,13 @@ export async function providerSigner(userId: string, role: 'payer' | 'payout' = 
 export async function putWalrusBlob(data: Uint8Array, opts?: { deletable?: boolean; epochs?: number; owner?: string }): Promise<{ id: string; objectId: string; size: number }> {
   const signer = platformSigner();
   const owner = opts?.owner || signer.toSuiAddress();
-
-  const env = loadEnv();
-  const rpcs = candidateRpcs(process.env.SUI_RPC_URL || env.SUI_RPC_URL);
-  let lastErr: any;
-  for (const url of rpcs) {
-    try {
-      const { walrus } = getClients(url);
-      return await uploadWithClients(walrus, signer, data, opts ?? {}, owner);
-    } catch (e: any) {
-      lastErr = e;
-      if (!isConnectTimeoutError(e)) throw e;
-      continue;
-    }
-  }
-  throw lastErr || new Error('RPC_UNAVAILABLE');
+  return await uploadBlob(signer, data, opts ?? {}, owner);
 }
 
 export async function putWalrusBlobAsProvider(userId: string, data: Uint8Array, opts?: { deletable?: boolean; epochs?: number; owner?: string }): Promise<{ id: string; objectId: string; size: number }> {
   const signer = await providerSigner(userId, 'payer');
   const owner = opts?.owner || signer.toSuiAddress();
-
-  const env = loadEnv();
-  const rpcs = candidateRpcs(process.env.SUI_RPC_URL || env.SUI_RPC_URL);
-  let lastErr: any;
-  for (const url of rpcs) {
-    try {
-      const { walrus } = getClients(url);
-      return await uploadWithClients(walrus, signer, data, opts ?? {}, owner);
-    } catch (e: any) {
-      lastErr = e;
-      if (!isConnectTimeoutError(e)) throw e;
-      continue;
-    }
-  }
-  throw lastErr || new Error('RPC_UNAVAILABLE');
+  return await uploadBlob(signer, data, opts ?? {}, owner);
 }
 
 export async function getWalrusBlob(id: string): Promise<Uint8Array> {

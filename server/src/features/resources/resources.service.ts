@@ -59,7 +59,7 @@ export async function createResourceForProvider(providerId: string, input: Omit<
     if (doc.type === 'site' && doc.domain) {
       doc.image_url = getFaviconUrlForDomain(doc.domain);
     } else {
-      doc.image_url = generatePlaceholderSvgDataUrl(doc.title);
+      doc.image_url = generatePlaceholderSvgDataUrl(doc.title, doc.format);
     }
   }
   await db.collection<ResourceDoc>('resources').insertOne(doc as any);
@@ -97,6 +97,10 @@ export async function listPublicResources(limit = 24) {
       verified: 1,
       updated_at: 1,
       image_url: 1,
+      size_bytes: 1,
+      walrus_blob_id: 1,
+      walrus_blob_object_id: 1,
+      cipher_meta: 1,
     } as any)
     .sort({ updated_at: -1 } as any)
     .limit(limit)
@@ -129,6 +133,10 @@ export async function listPublicResourcesByTags(tags: string[], limit = 24) {
       verified: 1,
       updated_at: 1,
       image_url: 1,
+      size_bytes: 1,
+      walrus_blob_id: 1,
+      walrus_blob_object_id: 1,
+      cipher_meta: 1,
     } as any)
     .sort({ updated_at: -1 } as any)
     .limit(limit)
@@ -149,6 +157,10 @@ export async function listPublicResourcesWithCategory(category: string, limit = 
       domain: 1,
       category: 1,
       summary: 1,
+      size_bytes: 1,
+      walrus_blob_id: 1,
+      walrus_blob_object_id: 1,
+      cipher_meta: 1,
       tags: 1,
       sample_preview: 1,
       price_per_kb: 1,
@@ -201,6 +213,10 @@ export async function searchPublicResources(query: string, opts?: { category?: s
     sample_preview: r.sample_preview,
     price_per_kb: r.price_per_kb,
     price_flat: r.price_flat,
+    size_bytes: r.size_bytes,
+    walrus_blob_id: r.walrus_blob_id,
+    walrus_blob_object_id: r.walrus_blob_object_id,
+    cipher_meta: r.cipher_meta,
     verified: r.verified,
     updated_at: r.updated_at,
     image_url: r.image_url,

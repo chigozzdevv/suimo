@@ -204,6 +204,9 @@ export interface CatalogResource {
   updated_at?: string;
   size_bytes?: number;
   image_url?: string;
+  walrus_blob_id?: string;
+  walrus_blob_object_id?: string;
+  cipher_meta?: { algo: string; size_bytes: number; content_type?: string };
 }
 
 export interface Connector {
@@ -630,7 +633,7 @@ class ApiService {
     return res.deposits;
   }
 
-  
+
 
   async uploadEncryptedToWalrus(file: File, opts?: { epochs?: number; deletable?: boolean }): Promise<{ walrus_blob_id: string; walrus_blob_object_id: string; size_bytes: number; cipher_meta: { algo: string; size_bytes: number } }> {
     const sealMod: any = await import('@mysten/seal');
@@ -653,7 +656,7 @@ class ApiService {
     try {
       const r = await this.getSealKeyServers();
       serverList = Array.isArray(r) ? r : [];
-    } catch {}
+    } catch { }
     if (!serverList.length) throw new Error('SEAL_KEY_SERVERS_UNAVAILABLE');
 
     const keyServers = await retrieveKeyServers({ objectIds: serverList.map(hexToBytes), client: sui as any });
@@ -705,17 +708,21 @@ class ApiService {
     return this.request<PricesResponse>(`/prices`)
   }
 
-  async getWalrusQuote(params: { size_bytes: number; epochs: number; deletable?: boolean }): Promise<{ encoded_bytes?: number; epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }>{
+  async getWalrusQuote(params: { size_bytes: number; epochs: number; deletable?: boolean }): Promise<{ encoded_bytes?: number; epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }> {
     return this.request(`/walrus/quote`, { method: 'POST', body: JSON.stringify(params) })
   }
 
-  async getWalrusExtendQuote(params: { size_bytes: number; add_epochs: number }): Promise<{ encoded_bytes?: number; add_epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }>{
+  async getWalrusExtendQuote(params: { size_bytes: number; add_epochs: number }): Promise<{ encoded_bytes?: number; add_epochs: number; wal_est: number; wal_breakdown?: { storage: number; write: number }; sui_est: number | null }> {
     return this.request(`/walrus/extend-quote`, { method: 'POST', body: JSON.stringify(params) })
   }
 
   async getSealKeyServers(): Promise<string[]> {
     const res = await this.request<{ objectIds: string[] }>(`/seal/key-servers`)
     return Array.isArray(res.objectIds) ? res.objectIds : []
+  }
+
+  async extendWalrusStorage(params: { resource_id: string; add_epochs: number }): Promise<{ ok: boolean }> {
+    return this.request(`/walrus/extend`, { method: 'POST', body: JSON.stringify(params) })
   }
 }
 
