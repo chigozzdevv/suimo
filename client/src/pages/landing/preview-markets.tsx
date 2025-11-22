@@ -18,7 +18,7 @@ export function PreviewMarkets() {
           api.getCatalogResources(),
           api.getPrices().catch(() => ({ wal_usd: null })),
         ]);
-        setItems(data.slice(0, 8));
+        setItems(data.slice(0, 6));
         setWalUsd(typeof prices.wal_usd === "number" ? prices.wal_usd : null);
       } catch (err: any) {
         setError(err.message || "Failed to load preview");
@@ -62,7 +62,7 @@ export function PreviewMarkets() {
       {error && !loading && <div className="mt-8 text-ember">{error}</div>}
       {!loading && !error && (
         <>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((resource, i) => (
               <motion.div
                 key={resource._id}
@@ -70,42 +70,47 @@ export function PreviewMarkets() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: i * 0.05 }}
-                className="group cursor-pointer rounded-2xl border border-white/10 bg-transparent p-5 transition-all hover:border-white/30 hover:bg-white/5"
+                className="group cursor-pointer rounded-2xl border border-white/10 bg-transparent p-6 transition-all hover:border-white/30 hover:bg-white/5 flex flex-col"
                 onClick={() =>
                   (window.location.href = `/markets/${resource._id}`)
                 }
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-parchment">
-                    <FileText className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-parchment">
+                    <FileText className="h-6 w-6" />
                   </div>
                   {resource.verified && (
-                    <span className="rounded-full bg-green-400/10 px-2 py-0.5 text-xs text-green-400">
+                    <span className="rounded-full bg-green-400/10 px-2.5 py-1 text-xs text-green-400 font-medium">
                       Verified
                     </span>
                   )}
                 </div>
 
-                <h3 className="truncate text-parchment font-semibold">
+                <h3 className="truncate text-lg text-parchment font-semibold mb-2">
                   {resource.title}
                 </h3>
 
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-fog uppercase">
-                    {resource.type}
-                  </span>
-                  <span className="rounded bg-white/5 px-2 py-0.5 text-xs text-fog uppercase">
-                    {resource.format}
-                  </span>
-                </div>
-
-                {resource.size_bytes && (
-                  <div className="mt-2 text-xs text-fog">
-                    {formatSize(resource.size_bytes)}
-                  </div>
+                {(resource.sample_preview || resource.summary) && (
+                  <p className="text-sm text-fog/80 line-clamp-3 mb-4 flex-1">
+                    {resource.sample_preview || resource.summary}
+                  </p>
                 )}
 
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-fog uppercase border border-white/5">
+                    {resource.type}
+                  </span>
+                  <span className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-fog uppercase border border-white/5">
+                    {resource.format}
+                  </span>
+                  {resource.size_bytes && (
+                    <span className="rounded-lg bg-white/5 px-2.5 py-1 text-xs text-fog border border-white/5">
+                      {formatSize(resource.size_bytes)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
                   <div className="text-sm">
                     {typeof resource.price_flat === "number" && (
                       <div className="font-medium text-parchment">
