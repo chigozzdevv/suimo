@@ -1,92 +1,100 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { LandingPage } from '@/pages/landing'
-import { MarketsPage } from '@/pages/markets'
-import { MarketDetailPage } from '@/pages/markets/detail'
-import { AuthPage } from '@/pages/auth'
-import { GetStartedPage } from '@/pages/landing/get-started'
-import { Dashboard } from '@/pages/dashboard'
-import { AuthProvider, useAuth } from '@/context/auth-context'
-import { redirectThroughSession } from '@/lib/session-redirect'
+import { useEffect, useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { LandingPage } from "@/pages/landing";
+import { MarketsPage } from "@/pages/markets";
+import { MarketDetailPage } from "@/pages/markets/detail";
+import { AuthPage } from "@/pages/auth";
+import { GetStartedPage } from "@/pages/landing/get-started";
+import { Dashboard } from "@/pages/dashboard";
+import { AuthProvider, useAuth } from "@/context/auth-context";
+import { redirectThroughSession } from "@/lib/session-redirect";
 
-const WORKSPACE_PREF_KEY = 'suimo_workspace_preference'
-const SECTION_PREF_PREFIX = 'suimo_section_'
+const WORKSPACE_PREF_KEY = "suimo_workspace_preference";
+const SECTION_PREF_PREFIX = "suimo_section_";
 
 function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
-  const location = useLocation()
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ink text-parchment">
         Loading…
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   if (/^\/app\/?$/.test(location.pathname)) {
-    let workspace: 'consumer' | 'provider' = 'consumer'
-    let section = 'overview'
+    let workspace: "consumer" | "provider" = "consumer";
+    let section = "overview";
     try {
-      const savedWorkspace = window.localStorage.getItem(WORKSPACE_PREF_KEY)
-      if (savedWorkspace === 'provider') workspace = 'provider'
-      const savedSection = window.localStorage.getItem(`${SECTION_PREF_PREFIX}${workspace}`)
-      if (savedSection) section = savedSection
+      const savedWorkspace = window.localStorage.getItem(WORKSPACE_PREF_KEY);
+      if (savedWorkspace === "provider") workspace = "provider";
+      const savedSection = window.localStorage.getItem(
+        `${SECTION_PREF_PREFIX}${workspace}`,
+      );
+      if (savedSection) section = savedSection;
     } catch {
       // ignore
     }
-    return <Navigate to={`/app/${workspace}/${section}`} replace />
+    return <Navigate to={`/app/${workspace}/${section}`} replace />;
   }
 
-  return <Dashboard />
+  return <Dashboard />;
 }
 
 function AuthScreen() {
-  const { isAuthenticated, isLoading } = useAuth()
-  const location = useLocation()
-  const returnTo = new URLSearchParams(location.search).get('return_to')
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+  const returnTo = new URLSearchParams(location.search).get("return_to");
 
   useEffect(() => {
     if (isAuthenticated && returnTo) {
-      redirectThroughSession(returnTo)
+      redirectThroughSession(returnTo);
     }
-  }, [isAuthenticated, returnTo])
+  }, [isAuthenticated, returnTo]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ink text-parchment">
         Loading…
       </div>
-    )
+    );
   }
 
   if (isAuthenticated) {
     if (returnTo) {
-      return null
+      return null;
     }
-    return <Navigate to="/app" replace />
+    return <Navigate to="/app" replace />;
   }
 
-  return <AuthPage />
+  return <AuthPage />;
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth()
-  const [hashAuth, setHashAuth] = useState(false)
+  const { isAuthenticated } = useAuth();
+  const [hashAuth, setHashAuth] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) return
+    if (isAuthenticated) return;
     const handleHashChange = () => {
-      setHashAuth(window.location.hash === '#auth')
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    handleHashChange()
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [isAuthenticated])
+      setHashAuth(window.location.hash === "#auth");
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [isAuthenticated]);
 
   return (
     <Routes>
@@ -97,9 +105,12 @@ function AppRoutes() {
       <Route path="/get-started" element={<GetStartedPage />} />
       <Route path="/get-started" element={<GetStartedPage />} />
       <Route path="/app/*" element={<ProtectedRoute />} />
-      <Route path="*" element={<Navigate to={isAuthenticated ? '/app' : '/'} replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={isAuthenticated ? "/app" : "/"} replace />}
+      />
     </Routes>
-  )
+  );
 }
 
 export default function App() {
@@ -109,5 +120,5 @@ export default function App() {
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
-  )
+  );
 }

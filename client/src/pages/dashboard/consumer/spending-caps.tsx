@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { api } from '@/services/api';
-import type { SpendingCaps, Receipt } from '@/services/api';
-import { Shield, Edit, Save, X } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/services/api";
+import type { SpendingCaps, Receipt } from "@/services/api";
+import { Shield, Edit, Save, X } from "lucide-react";
 
 export function SpendingCapsPage() {
   const [caps, setCaps] = useState<SpendingCaps | null>(null);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [editedCaps, setEditedCaps] = useState({
     global_weekly_cap: 0,
@@ -40,7 +40,7 @@ export function SpendingCapsPage() {
         summary_cap: capsData.per_mode_caps?.summary || 20,
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to load spending caps');
+      setError(err.message || "Failed to load spending caps");
     } finally {
       setIsLoading(false);
     }
@@ -59,10 +59,10 @@ export function SpendingCapsPage() {
       setIsEditing(false);
       loadData();
     } catch (err: any) {
-      if (err?.message === 'DAILY_LIMIT_REACHED') {
-        setError('You have reached today’s mint limit. Try again tomorrow.');
+      if (err?.message === "DAILY_LIMIT_REACHED") {
+        setError("You have reached today’s mint limit. Try again tomorrow.");
       } else {
-        setError(err.message || 'Failed to update spending caps');
+        setError(err.message || "Failed to update spending caps");
       }
     }
   };
@@ -76,9 +76,9 @@ export function SpendingCapsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -104,13 +104,21 @@ export function SpendingCapsPage() {
           <p className="text-sm text-fog mt-1">Manage caps to control costs</p>
         </div>
         {!isEditing ? (
-          <Button variant="outline" onClick={() => setIsEditing(true)} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsEditing(true)}
+            className="gap-2"
+          >
             <Edit className="w-4 h-4" />
             Edit Caps
           </Button>
         ) : (
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsEditing(false)}
+              className="gap-2"
+            >
               <X className="w-4 h-4" />
               Cancel
             </Button>
@@ -135,7 +143,9 @@ export function SpendingCapsPage() {
                   <Shield className="w-5 h-5 text-sand" />
                 </div>
                 <div>
-                  <h3 className="text-parchment font-medium">Weekly Global Cap</h3>
+                  <h3 className="text-parchment font-medium">
+                    Weekly Global Cap
+                  </h3>
                   <p className="text-xs text-fog">Maximum spend per week</p>
                 </div>
               </div>
@@ -144,7 +154,10 @@ export function SpendingCapsPage() {
                   type="number"
                   value={editedCaps.global_weekly_cap}
                   onChange={(e) =>
-                    setEditedCaps({ ...editedCaps, global_weekly_cap: Number(e.target.value) })
+                    setEditedCaps({
+                      ...editedCaps,
+                      global_weekly_cap: Number(e.target.value),
+                    })
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-parchment focus:outline-none focus:border-sand/50"
                   min="0"
@@ -158,7 +171,9 @@ export function SpendingCapsPage() {
               <div className="mt-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-fog">Spent this week</span>
-                  <span className="text-parchment font-medium">{formatCurrency(weekSpent)}</span>
+                  <span className="text-parchment font-medium">
+                    {formatCurrency(weekSpent)}
+                  </span>
                 </div>
                 <div className="w-full bg-white/5 rounded-full h-2">
                   <div
@@ -185,7 +200,9 @@ export function SpendingCapsPage() {
                   <Shield className="w-5 h-5 text-ember" />
                 </div>
                 <div>
-                  <h3 className="text-parchment font-medium">Per Site Daily Cap</h3>
+                  <h3 className="text-parchment font-medium">
+                    Per Site Daily Cap
+                  </h3>
                   <p className="text-xs text-fog">Maximum per resource/day</p>
                 </div>
               </div>
@@ -194,7 +211,10 @@ export function SpendingCapsPage() {
                   type="number"
                   value={editedCaps.per_site_daily_cap}
                   onChange={(e) =>
-                    setEditedCaps({ ...editedCaps, per_site_daily_cap: Number(e.target.value) })
+                    setEditedCaps({
+                      ...editedCaps,
+                      per_site_daily_cap: Number(e.target.value),
+                    })
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-parchment focus:outline-none focus:border-sand/50"
                   min="0"
@@ -230,7 +250,10 @@ export function SpendingCapsPage() {
                   type="number"
                   value={editedCaps.raw_cap}
                   onChange={(e) =>
-                    setEditedCaps({ ...editedCaps, raw_cap: Number(e.target.value) })
+                    setEditedCaps({
+                      ...editedCaps,
+                      raw_cap: Number(e.target.value),
+                    })
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-parchment focus:outline-none focus:border-sand/50"
                   min="0"
@@ -257,7 +280,9 @@ export function SpendingCapsPage() {
                   <Shield className="w-5 h-5 text-ember" />
                 </div>
                 <div>
-                  <h3 className="text-parchment font-medium">Summary Mode Cap</h3>
+                  <h3 className="text-parchment font-medium">
+                    Summary Mode Cap
+                  </h3>
                   <p className="text-xs text-fog">Weekly limit for summaries</p>
                 </div>
               </div>
@@ -266,7 +291,10 @@ export function SpendingCapsPage() {
                   type="number"
                   value={editedCaps.summary_cap}
                   onChange={(e) =>
-                    setEditedCaps({ ...editedCaps, summary_cap: Number(e.target.value) })
+                    setEditedCaps({
+                      ...editedCaps,
+                      summary_cap: Number(e.target.value),
+                    })
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-parchment focus:outline-none focus:border-sand/50"
                   min="0"
@@ -281,7 +309,6 @@ export function SpendingCapsPage() {
           </Card>
         </motion.div>
       </div>
-
     </div>
   );
 }

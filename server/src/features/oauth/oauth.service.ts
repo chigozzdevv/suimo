@@ -1,7 +1,7 @@
-import { randomBytes, createHash, createPrivateKey } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { loadEnv } from '@/config/env.js';
-import { SignJWT, jwtVerify, importPKCS8, exportJWK, importJWK } from 'jose';
+import { randomBytes, createHash, createPrivateKey } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { loadEnv } from "@/config/env.js";
+import { SignJWT, jwtVerify, importPKCS8, exportJWK, importJWK } from "jose";
 import {
   findClientById,
   generateAuthorizationCode,
@@ -16,8 +16,8 @@ import {
   findRefreshToken,
   revokeRefreshToken,
   type OAuthClientDoc,
-} from '@/features/oauth/oauth.model.js';
-import { ensureAgentForClient } from '@/features/agents/agents.service.js';
+} from "@/features/oauth/oauth.model.js";
+import { ensureAgentForClient } from "@/features/agents/agents.service.js";
 
 type CreateClientParams = {
   client_name?: string;
@@ -28,7 +28,7 @@ type CreateClientParams = {
 
 type RegisterClientResult = {
   client_id: string;
-  token_endpoint_auth_method: 'none' | 'client_secret_post';
+  token_endpoint_auth_method: "none" | "client_secret_post";
   client_id_issued_at: number;
   redirect_uris: string[];
   client_name?: string;
@@ -43,7 +43,7 @@ type AuthorizationInput = {
   redirect_uri: string;
   code_challenge: string;
   resource: string;
-  code_challenge_method: 'S256';
+  code_challenge_method: "S256";
   scope: string[];
 };
 
@@ -62,7 +62,7 @@ type AccessTokenResult = {
   refresh_token: string;
   refresh_token_expires_in: number;
   scope: string;
-  token_type: 'Bearer';
+  token_type: "Bearer";
   resource: string;
   agent_id: string;
 };
@@ -78,10 +78,10 @@ function nowSeconds() {
 
 function loadConfig() {
   const env = loadEnv();
-  const issuer = env.OAUTH_ISSUER || 'https://suimo.local';
+  const issuer = env.OAUTH_ISSUER || "https://suimo.local";
   const resource = env.OAUTH_RESOURCE || `${issuer}/mcp`;
   const accessTtl = Number(env.OAUTH_ACCESS_TOKEN_TTL || 300);
-  const refreshTtl = Number(env.OAUTH_REFRESH_TOKEN_TTL || (60 * 60 * 24 * 30));
+  const refreshTtl = Number(env.OAUTH_REFRESH_TOKEN_TTL || 60 * 60 * 24 * 30);
   return { issuer, resource, accessTtl, refreshTtl };
 }
 
@@ -89,13 +89,13 @@ export function getResourcePathSuffix() {
   const { resource } = loadConfig();
   try {
     const resourceUrl = new URL(resource);
-    const trimmed = resourceUrl.pathname.replace(/\/+$/, '');
-    if (!trimmed || trimmed === '/') {
-      return '';
+    const trimmed = resourceUrl.pathname.replace(/\/+$/, "");
+    if (!trimmed || trimmed === "/") {
+      return "";
     }
     return trimmed;
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -113,10 +113,10 @@ async function getSigningKey() {
   if (!signingKeyPromise) {
     const { ED25519_PRIVATE_KEY_PATH } = process.env as any;
     if (!ED25519_PRIVATE_KEY_PATH) {
-      throw new Error('ED25519_PRIVATE_KEY_PATH is required for OAuth signing');
+      throw new Error("ED25519_PRIVATE_KEY_PATH is required for OAuth signing");
     }
-    const pem = await readFile(ED25519_PRIVATE_KEY_PATH, 'utf8');
-    const keyObject = createPrivateKey({ key: pem, format: 'pem' });
+    const pem = await readFile(ED25519_PRIVATE_KEY_PATH, "utf8");
+    const keyObject = createPrivateKey({ key: pem, format: "pem" });
     signingKeyPromise = Promise.resolve(keyObject as any);
   }
   return signingKeyPromise;
@@ -125,7 +125,7 @@ async function getSigningKey() {
 async function getVerificationKey() {
   if (!verificationKeyPromise) {
     const jwk = await getPublicJwk();
-    verificationKeyPromise = importJWK(jwk as any, 'EdDSA') as Promise<any>;
+    verificationKeyPromise = importJWK(jwk as any, "EdDSA") as Promise<any>;
   }
   return verificationKeyPromise;
 }
@@ -135,10 +135,10 @@ async function getPublicJwk() {
     const privateKey = await getSigningKey();
     const jwk = await exportJWK(privateKey);
     delete (jwk as any).d;
-    jwk.use = 'sig';
-    jwk.alg = 'EdDSA';
-    jwk.kty = 'OKP';
-    jwk.crv = 'Ed25519';
+    jwk.use = "sig";
+    jwk.alg = "EdDSA";
+    jwk.kty = "OKP";
+    jwk.crv = "Ed25519";
     jwk.kid = await getKid();
     publicJwkPromise = Promise.resolve(jwk);
   }
@@ -148,8 +148,8 @@ async function getPublicJwk() {
 async function getKid() {
   if (!kidPromise) {
     const jwk = await exportJWK(await getSigningKey());
-    const keyMaterial = Buffer.from(jwk.x as string, 'base64url');
-    const hash = createHash('sha256').update(keyMaterial).digest('base64url');
+    const keyMaterial = Buffer.from(jwk.x as string, "base64url");
+    const hash = createHash("sha256").update(keyMaterial).digest("base64url");
     kidPromise = Promise.resolve(hash);
   }
   return kidPromise;
@@ -160,14 +160,18 @@ export async function getJwksResponse() {
   return { keys: [jwk] };
 }
 
-export async function registerClient(params: CreateClientParams): Promise<RegisterClientResult> {
+export async function registerClient(
+  params: CreateClientParams,
+): Promise<RegisterClientResult> {
   const client_id = generateClientId();
-  const authMethod: 'none' | 'client_secret_post' =
-    params.token_endpoint_auth_method === 'client_secret_post' ? 'client_secret_post' : 'none';
+  const authMethod: "none" | "client_secret_post" =
+    params.token_endpoint_auth_method === "client_secret_post"
+      ? "client_secret_post"
+      : "none";
   let clientSecret: string | undefined;
   let clientSecretHash: string | undefined;
-  if (authMethod === 'client_secret_post') {
-    clientSecret = 'cs_' + randomBytes(32).toString('hex');
+  if (authMethod === "client_secret_post") {
+    clientSecret = "cs_" + randomBytes(32).toString("hex");
     clientSecretHash = hashToken(clientSecret);
   }
   const doc = {
@@ -211,16 +215,21 @@ export async function createAuthorizationCode(input: AuthorizationInput) {
   return code;
 }
 
-export async function issueTokensFromCode(code: string, redirectUri: string | undefined, codeVerifier: string, resource?: string) {
+export async function issueTokensFromCode(
+  code: string,
+  redirectUri: string | undefined,
+  codeVerifier: string,
+  resource?: string,
+) {
   const codeDoc = await consumeAuthorizationCode(code);
-  if (!codeDoc) throw new Error('invalid_grant_code');
+  if (!codeDoc) throw new Error("invalid_grant_code");
   if (redirectUri && codeDoc.redirect_uri !== redirectUri) {
     await deleteAuthorizationCode(code);
-    throw new Error('invalid_grant_redirect_uri');
+    throw new Error("invalid_grant_redirect_uri");
   }
   if (codeDoc.expires_at.getTime() < Date.now()) {
     await deleteAuthorizationCode(code);
-    throw new Error('invalid_grant_expired');
+    throw new Error("invalid_grant_expired");
   }
   // Always bind the token audience to the authorized resource to satisfy RS validation.
   const tokenResource = codeDoc.resource;
@@ -228,20 +237,23 @@ export async function issueTokensFromCode(code: string, redirectUri: string | un
     try {
       const provided = new URL(resource);
       const authorized = new URL(codeDoc.resource);
-      const same = resource === codeDoc.resource || provided.origin === authorized.origin;
+      const same =
+        resource === codeDoc.resource || provided.origin === authorized.origin;
       if (!same) {
         await deleteAuthorizationCode(code);
-        throw new Error('invalid_target');
+        throw new Error("invalid_target");
       }
     } catch {
       await deleteAuthorizationCode(code);
-      throw new Error('invalid_target');
+      throw new Error("invalid_target");
     }
   }
-  const expectedChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
+  const expectedChallenge = createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
   if (expectedChallenge !== codeDoc.code_challenge) {
     await deleteAuthorizationCode(code);
-    throw new Error('invalid_grant_pkce');
+    throw new Error("invalid_grant_pkce");
   }
   const clientIdStr = String(codeDoc.client_id);
   const userIdStr = String(codeDoc.user_id);
@@ -258,11 +270,14 @@ export async function issueTokensFromCode(code: string, redirectUri: string | un
   return tokens;
 }
 
-async function createTokenResponse(payload: TokenPayload, previousRefreshId?: string): Promise<AccessTokenResult> {
+async function createTokenResponse(
+  payload: TokenPayload,
+  previousRefreshId?: string,
+): Promise<AccessTokenResult> {
   const { issuer, accessTtl, refreshTtl } = loadConfig();
   const key = await getSigningKey();
   const exp = nowSeconds() + accessTtl;
-  const jti = randomBytes(16).toString('base64url');
+  const jti = randomBytes(16).toString("base64url");
   const accessToken = await new SignJWT({
     sub: payload.sub,
     aud: payload.aud,
@@ -272,7 +287,7 @@ async function createTokenResponse(payload: TokenPayload, previousRefreshId?: st
     agent_id: payload.agent_id,
     jti,
   })
-    .setProtectedHeader({ alg: 'EdDSA', kid: await getKid() })
+    .setProtectedHeader({ alg: "EdDSA", kid: await getKid() })
     .setIssuer(issuer)
     .setIssuedAt()
     .setExpirationTime(exp)
@@ -280,7 +295,7 @@ async function createTokenResponse(payload: TokenPayload, previousRefreshId?: st
 
   const refreshValue = generateRefreshTokenValue();
   const refreshTokenDoc = {
-    _id: 'rt_' + randomBytes(24).toString('hex'),
+    _id: "rt_" + randomBytes(24).toString("hex"),
     client_id: payload.client_id,
     user_id: payload.sub,
     hashed_token: hashToken(refreshValue),
@@ -300,33 +315,40 @@ async function createTokenResponse(payload: TokenPayload, previousRefreshId?: st
     expires_in: accessTtl,
     refresh_token: refreshValue,
     refresh_token_expires_in: refreshTtl,
-    scope: payload.scope.join(' '),
-    token_type: 'Bearer',
+    scope: payload.scope.join(" "),
+    token_type: "Bearer",
     resource: payload.resource,
     agent_id: payload.agent_id,
   };
 }
 
-export async function issueTokensFromRefreshToken(refreshToken: string, clientId: string, resource: string) {
+export async function issueTokensFromRefreshToken(
+  refreshToken: string,
+  clientId: string,
+  resource: string,
+) {
   const hashed = hashToken(refreshToken);
   const doc = await findRefreshToken(hashed);
-  if (!doc) throw new Error('invalid_grant');
+  if (!doc) throw new Error("invalid_grant");
   const storedClientId = String(doc.client_id);
-  if (storedClientId !== clientId) throw new Error('invalid_client');
-  if (doc.expires_at.getTime() < Date.now()) throw new Error('invalid_grant');
-  if (doc.resource !== resource) throw new Error('invalid_target');
+  if (storedClientId !== clientId) throw new Error("invalid_client");
+  if (doc.expires_at.getTime() < Date.now()) throw new Error("invalid_grant");
+  if (doc.resource !== resource) throw new Error("invalid_target");
 
   const userIdStr = String(doc.user_id);
   const agentId = await ensureAgentForClient(userIdStr, storedClientId);
   const resourceStr = String(doc.resource);
-  const tokens = await createTokenResponse({
-    sub: userIdStr,
-    client_id: storedClientId,
-    scope: doc.scope,
-    resource: resourceStr,
-    aud: resourceStr,
-    agent_id: agentId,
-  } as TokenPayload, String(doc._id));
+  const tokens = await createTokenResponse(
+    {
+      sub: userIdStr,
+      client_id: storedClientId,
+      scope: doc.scope,
+      resource: resourceStr,
+      aud: resourceStr,
+      agent_id: agentId,
+    } as TokenPayload,
+    String(doc._id),
+  );
   return tokens;
 }
 
@@ -334,25 +356,26 @@ export async function verifyAccessToken(token: string) {
   const { issuer, resource } = loadConfig();
   const key = await getVerificationKey();
   const { payload } = await jwtVerify(token, key, { issuer });
-  if (typeof payload.aud !== 'string' || payload.aud !== resource) {
-    throw new Error('invalid_token');
+  if (typeof payload.aud !== "string" || payload.aud !== resource) {
+    throw new Error("invalid_token");
   }
-  if (!payload.client_id || typeof payload.client_id !== 'string') {
-    throw new Error('invalid_token');
+  if (!payload.client_id || typeof payload.client_id !== "string") {
+    throw new Error("invalid_token");
   }
-  if (!payload.sub || typeof payload.sub !== 'string') {
-    throw new Error('invalid_token');
+  if (!payload.sub || typeof payload.sub !== "string") {
+    throw new Error("invalid_token");
   }
   const rawScope = payload.scope;
   const scopes = Array.isArray(rawScope)
     ? (rawScope as string[])
-    : typeof rawScope === 'string'
-      ? rawScope.split(' ').filter(Boolean)
+    : typeof rawScope === "string"
+      ? rawScope.split(" ").filter(Boolean)
       : [];
   if (scopes.length === 0) {
-    throw new Error('invalid_token');
+    throw new Error("invalid_token");
   }
-  const agentId = typeof payload.agent_id === 'string' ? payload.agent_id : undefined;
+  const agentId =
+    typeof payload.agent_id === "string" ? payload.agent_id : undefined;
   return {
     userId: payload.sub,
     clientId: payload.client_id,
@@ -364,7 +387,7 @@ export async function verifyAccessToken(token: string) {
 
 export async function ensureClientExists(clientId: string) {
   const client = await findClientById(clientId);
-  if (!client) throw new Error('invalid_client');
+  if (!client) throw new Error("invalid_client");
   return client;
 }
 
@@ -384,26 +407,38 @@ export function buildAuthorizationServerMetadata(baseUrl: string) {
     token_endpoint: `${baseUrl}/oauth/token`,
     registration_endpoint: `${baseUrl}/oauth/register`,
     jwks_uri: `${baseUrl}/.well-known/oauth-jwks.json`,
-    response_types_supported: ['code'],
-    grant_types_supported: ['authorization_code', 'refresh_token'],
-    code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
-    scopes_supported: ['mcp'],
-    claims_supported: ['sub', 'aud', 'iss', 'exp', 'scope', 'client_id', 'jti', 'agent_id'],
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    code_challenge_methods_supported: ["S256"],
+    token_endpoint_auth_methods_supported: ["none", "client_secret_post"],
+    scopes_supported: ["mcp"],
+    claims_supported: [
+      "sub",
+      "aud",
+      "iss",
+      "exp",
+      "scope",
+      "client_id",
+      "jti",
+      "agent_id",
+    ],
   };
 }
 
-export function assertClientSecret(client: OAuthClientDoc, providedSecret?: string) {
-  if (client.token_endpoint_auth_method === 'client_secret_post') {
+export function assertClientSecret(
+  client: OAuthClientDoc,
+  providedSecret?: string,
+) {
+  if (client.token_endpoint_auth_method === "client_secret_post") {
     if (!providedSecret) {
-      throw new Error('invalid_client');
+      throw new Error("invalid_client");
     }
     if (!client.client_secret_hash) {
-      throw new Error('invalid_client');
+      throw new Error("invalid_client");
     }
     const providedHash = hashToken(providedSecret);
     if (providedHash !== client.client_secret_hash) {
-      throw new Error('invalid_client');
+      throw new Error("invalid_client");
     }
   }
 }

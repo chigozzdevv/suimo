@@ -1,5 +1,8 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { verifyAccessToken, getProtectedResourceMetadataUrls } from '@/features/oauth/oauth.service.js';
+import type { FastifyReply, FastifyRequest } from "fastify";
+import {
+  verifyAccessToken,
+  getProtectedResourceMetadataUrls,
+} from "@/features/oauth/oauth.service.js";
 
 function buildWwwAuthenticate(baseUrl: string) {
   const metadataUrls = getProtectedResourceMetadataUrls(baseUrl);
@@ -9,24 +12,24 @@ function buildWwwAuthenticate(baseUrl: string) {
 }
 
 export async function requireOAuth(req: FastifyRequest, reply: FastifyReply) {
-  const auth = req.headers['authorization'];
-  if (!auth || !auth.startsWith('Bearer ')) {
-    reply.header('WWW-Authenticate', buildWwwAuthenticate(getBaseUrl(req)));
-    return reply.code(401).send({ error: 'invalid_token' });
+  const auth = req.headers["authorization"];
+  if (!auth || !auth.startsWith("Bearer ")) {
+    reply.header("WWW-Authenticate", buildWwwAuthenticate(getBaseUrl(req)));
+    return reply.code(401).send({ error: "invalid_token" });
   }
-  const token = auth.slice('Bearer '.length).trim();
+  const token = auth.slice("Bearer ".length).trim();
   try {
     const payload = await verifyAccessToken(token);
     (req as any).oauth = payload;
   } catch {
-    reply.header('WWW-Authenticate', buildWwwAuthenticate(getBaseUrl(req)));
-    return reply.code(401).send({ error: 'invalid_token' });
+    reply.header("WWW-Authenticate", buildWwwAuthenticate(getBaseUrl(req)));
+    return reply.code(401).send({ error: "invalid_token" });
   }
 }
 
 function getBaseUrl(req: FastifyRequest) {
-  const forwardedProto = req.headers['x-forwarded-proto'];
-  const forwardedHost = req.headers['x-forwarded-host'];
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
   if (forwardedProto) {
     return `${forwardedProto}://${forwardedHost || req.headers.host}`;
   }

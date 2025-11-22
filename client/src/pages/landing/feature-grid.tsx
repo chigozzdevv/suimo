@@ -1,22 +1,22 @@
-import { motion } from 'framer-motion'
+import { motion } from "framer-motion";
 
 const features = [
   {
-    title: 'Authorized by design',
+    title: "Authorized by design",
     description:
-      'Issue time-boxed, scope-limited crawl tokens bound to domains, paths, or queries. Every request is signed and traceable.',
+      "Issue time-boxed, scope-limited crawl tokens bound to domains, paths, or queries. Every request is signed and traceable.",
   },
   {
-    title: 'Agent-first protocol',
+    title: "Agent-first protocol",
     description:
-      'First-class support for Model Context Protocol (MCP) so LLM agents can request capabilities without leaking secrets.',
+      "First-class support for Model Context Protocol (MCP) so LLM agents can request capabilities without leaking secrets.",
   },
   {
-    title: 'Usage-based billing',
+    title: "Usage-based billing",
     description:
-      'Fair, per-crawl metering with spending caps. Pay only for what you fetch with instant USDC settlement.',
+      "Fair, per-crawl metering with spending caps. Pay only for what you fetch with instant USDC settlement.",
   },
-]
+];
 
 export function FeatureGrid() {
   return (
@@ -33,19 +33,21 @@ export function FeatureGrid() {
         </motion.div>
       ))}
     </section>
-  )
+  );
 }
 
 type FeatureCardProps = {
-  title: string
-  description: string
-}
+  title: string;
+  description: string;
+};
 
 function FeatureCard({ title, description }: FeatureCardProps) {
   return (
     <div className="h-full">
-      <h3 className="text-lg md:text-xl font-semibold text-parchment">{title}</h3>
+      <h3 className="text-lg md:text-xl font-semibold text-parchment">
+        {title}
+      </h3>
       <p className="mt-2 text-[15px] leading-relaxed text-fog">{description}</p>
     </div>
-  )
+  );
 }

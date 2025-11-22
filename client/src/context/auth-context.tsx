@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { api } from '@/services/api';
-import type { AuthResponse } from '@/services/api';
+import { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
+import { api } from "@/services/api";
+import type { AuthResponse } from "@/services/api";
 
 interface User {
   _id: string;
@@ -16,7 +16,11 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  walletLogin: (address: string, signature: string, nonce: string) => Promise<void>;
+  walletLogin: (
+    address: string,
+    signature: string,
+    nonce: string,
+  ) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
 }
@@ -31,11 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = api.getToken();
     if (token) {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(atob(token.split(".")[1]));
         setUser({
           _id: payload.sub,
-          name: payload.name || '',
-          email: payload.email || '',
+          name: payload.name || "",
+          email: payload.email || "",
           roles: payload.roles || [],
         });
       } catch (error) {
@@ -60,10 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     handleAuthResponse(response);
   };
 
-  const walletLogin = async (address: string, signature: string, nonce: string) => {
+  const walletLogin = async (
+    address: string,
+    signature: string,
+    nonce: string,
+  ) => {
     const response = await api.walletLogin({
       address,
-      chain: 'sui',
+      chain: "sui",
       signature,
       nonce,
     });
@@ -97,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

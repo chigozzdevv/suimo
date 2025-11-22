@@ -1,44 +1,44 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: 'What is MCP and why does it matter?',
+    question: "What is MCP and why does it matter?",
     answer:
-      'Model Context Protocol (MCP) is a standard that lets AI agents discover and request capabilities securely. Instead of managing countless API keys, agents can authenticate once via OAuth and discover available resources through a standardized protocol.',
+      "Model Context Protocol (MCP) is a standard that lets AI agents discover and request capabilities securely. Instead of managing countless API keys, agents can authenticate once via OAuth and discover available resources through a standardized protocol.",
   },
   {
-    question: 'How does payment work?',
+    question: "How does payment work?",
     answer:
-      'We use instant custodial settlement in USDC on SUI. When an AI agent fetches content, the payment settles immediately and you receive a cryptographically signed receipt with proof.',
+      "We use instant custodial settlement in USDC on SUI. When an AI agent fetches content, the payment settles immediately and you receive a cryptographically signed receipt with proof.",
   },
   {
-    question: 'What are spending caps?',
+    question: "What are spending caps?",
     answer:
-      'Suimo provides multi-level spending limits: global weekly caps, per-site daily caps, and per-mode caps. This ensures agents never overspend and gives you full control over your budget.',
+      "Suimo provides multi-level spending limits: global weekly caps, per-site daily caps, and per-mode caps. This ensures agents never overspend and gives you full control over your budget.",
   },
   {
-    question: 'How do content providers get paid?',
+    question: "How do content providers get paid?",
     answer:
-      'Providers receive instant USDC payouts to their SUI wallet when agents access their resources. Payments are split automatically: provider gets their share minus platform fees, with full transparency via cryptographic receipts.',
+      "Providers receive instant USDC payouts to their SUI wallet when agents access their resources. Payments are split automatically: provider gets their share minus platform fees, with full transparency via cryptographic receipts.",
   },
   {
-    question: 'What pricing models are supported?',
+    question: "What pricing models are supported?",
     answer:
-      'Providers can choose between flat-rate pricing (fixed cost per fetch) or per-KB metered billing. You set your own rates and Suimo handles the metering, escrow, and settlement automatically.',
+      "Providers can choose between flat-rate pricing (fixed cost per fetch) or per-KB metered billing. You set your own rates and Suimo handles the metering, escrow, and settlement automatically.",
   },
   {
-    question: 'How is this different from traditional APIs?',
+    question: "How is this different from traditional APIs?",
     answer:
-      'Traditional APIs require manual integration, API key management, and monthly billing. Suimo enables pay-per-use access with instant settlement, standardized discovery via MCP, and built-in authorization—no contracts or upfront commitments.',
+      "Traditional APIs require manual integration, API key management, and monthly billing. Suimo enables pay-per-use access with instant settlement, standardized discovery via MCP, and built-in authorization—no contracts or upfront commitments.",
   },
-]
+];
 
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <section id="faq">
@@ -49,8 +49,12 @@ export function FAQ() {
         transition={{ duration: 0.6 }}
         className="text-center"
       >
-        <h2 className="text-3xl font-medium tracking-tight md:text-4xl">Frequently Asked Questions</h2>
-        <p className="mt-3 text-base text-fog md:text-lg">Everything you need to know about Suimo</p>
+        <h2 className="text-3xl font-medium tracking-tight md:text-4xl">
+          Frequently Asked Questions
+        </h2>
+        <p className="mt-3 text-base text-fog md:text-lg">
+          Everything you need to know about Suimo
+        </p>
       </motion.div>
 
       <div className="mx-auto mt-12 max-w-3xl space-y-4">
@@ -72,7 +76,7 @@ export function FAQ() {
         ))}
       </div>
     </section>
-  )
+  );
 }
 
 function FAQItem({
@@ -81,10 +85,10 @@ function FAQItem({
   isOpen,
   onClick,
 }: {
-  question: string
-  answer: string
-  isOpen: boolean
-  onClick: () => void
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onClick: () => void;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-transparent transition-colors hover:border-white/20">
@@ -95,7 +99,7 @@ function FAQItem({
         <span className="pr-4 font-medium text-parchment">{question}</span>
         <ChevronDown
           className={`h-5 w-5 flex-shrink-0 text-sand transition-transform ${
-            isOpen ? 'rotate-180' : ''
+            isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
@@ -103,15 +107,17 @@ function FAQItem({
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-6 pt-0 text-sm leading-relaxed text-fog">{answer}</div>
+            <div className="px-6 pb-6 pt-0 text-sm leading-relaxed text-fog">
+              {answer}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

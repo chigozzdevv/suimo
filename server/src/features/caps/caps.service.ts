@@ -1,5 +1,5 @@
-import { getDb } from '@/config/db.js';
-import { getUserCaps, getDefaultCaps } from './caps.model.js';
+import { getDb } from "@/config/db.js";
+import { getUserCaps, getDefaultCaps } from "./caps.model.js";
 
 type CapCheckResult = {
   allowed: boolean;
@@ -11,8 +11,8 @@ type CapCheckResult = {
 export async function checkSpendingCaps(
   userId: string,
   resourceId: string,
-  mode: 'raw' | 'summary',
-  estimatedCost: number
+  mode: "raw" | "summary",
+  estimatedCost: number,
 ): Promise<CapCheckResult> {
   const db = await getDb();
   let caps = await getUserCaps(userId);
@@ -23,10 +23,16 @@ export async function checkSpendingCaps(
   if (caps.global_weekly_cap && caps.global_weekly_cap > 0) {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const weeklySpend = await db
-      .collection('requests')
+      .collection("requests")
       .aggregate([
-        { $match: { user_id: userId, status: 'settled', ts: { $gte: weekAgo.toISOString() } } },
-        { $group: { _id: null, total: { $sum: '$cost' } } },
+        {
+          $match: {
+            user_id: userId,
+            status: "settled",
+            ts: { $gte: weekAgo.toISOString() },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$cost" } } },
       ])
       .toArray();
 
@@ -34,7 +40,7 @@ export async function checkSpendingCaps(
     if (currentWeeklySpend + estimatedCost > caps.global_weekly_cap) {
       return {
         allowed: false,
-        reason: 'GLOBAL_WEEKLY_CAP_EXCEEDED',
+        reason: "GLOBAL_WEEKLY_CAP_EXCEEDED",
         limit: caps.global_weekly_cap,
         current: currentWeeklySpend,
       };
@@ -44,10 +50,17 @@ export async function checkSpendingCaps(
   if (caps.per_site_daily_cap && caps.per_site_daily_cap > 0) {
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const dailySiteSpend = await db
-      .collection('requests')
+      .collection("requests")
       .aggregate([
-        { $match: { user_id: userId, resource_id: resourceId, status: 'settled', ts: { $gte: dayAgo.toISOString() } } },
-        { $group: { _id: null, total: { $sum: '$cost' } } },
+        {
+          $match: {
+            user_id: userId,
+            resource_id: resourceId,
+            status: "settled",
+            ts: { $gte: dayAgo.toISOString() },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$cost" } } },
       ])
       .toArray();
 
@@ -55,21 +68,29 @@ export async function checkSpendingCaps(
     if (currentDailySiteSpend + estimatedCost > caps.per_site_daily_cap) {
       return {
         allowed: false,
-        reason: 'PER_SITE_DAILY_CAP_EXCEEDED',
+        reason: "PER_SITE_DAILY_CAP_EXCEEDED",
         limit: caps.per_site_daily_cap,
         current: currentDailySiteSpend,
       };
     }
   }
 
-  const modeCap = mode === 'raw' ? caps.per_mode_caps?.raw : caps.per_mode_caps?.summary;
+  const modeCap =
+    mode === "raw" ? caps.per_mode_caps?.raw : caps.per_mode_caps?.summary;
   if (modeCap && modeCap > 0) {
     const modeWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const modeSpend = await db
-      .collection('requests')
+      .collection("requests")
       .aggregate([
-        { $match: { user_id: userId, mode: mode, status: 'settled', ts: { $gte: modeWindowStart.toISOString() } } },
-        { $group: { _id: null, total: { $sum: '$cost' } } },
+        {
+          $match: {
+            user_id: userId,
+            mode: mode,
+            status: "settled",
+            ts: { $gte: modeWindowStart.toISOString() },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$cost" } } },
       ])
       .toArray();
 

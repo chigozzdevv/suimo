@@ -1,84 +1,136 @@
-import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { api } from '@/services/api'
-import { walletService } from '@/services/wallet'
-import { Wallet as WalletIcon, ShieldCheck } from 'lucide-react'
-import { SpendingCapsPage } from './spending-caps'
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/services/api";
+import { walletService } from "@/services/wallet";
+import { Wallet as WalletIcon, ShieldCheck } from "lucide-react";
+import { SpendingCapsPage } from "./spending-caps";
 
 export function ConsumerSettingsPage() {
-  const [walletStatus, setWalletStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
-  const [walletLoading, setWalletLoading] = useState(false)
+  const [walletStatus, setWalletStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'caps' | 'payout' | 'security'>('caps')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [changeStatus, setChangeStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
-  const [changeLoading, setChangeLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<"caps" | "payout" | "security">(
+    "caps",
+  );
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changeStatus, setChangeStatus] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [changeLoading, setChangeLoading] = useState(false);
 
-  const [pinStatus, setPinStatus] = useState<{ has_pin: boolean; locked_until?: string; remaining_attempts?: number } | null>(null)
-  const [pinMsg, setPinMsg] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
-  const [currPin, setCurrPin] = useState('')
-  const [newPin, setNewPin] = useState('')
-  const [confirmPin, setConfirmPin] = useState('')
+  const [pinStatus, setPinStatus] = useState<{
+    has_pin: boolean;
+    locked_until?: string;
+    remaining_attempts?: number;
+  } | null>(null);
+  const [pinMsg, setPinMsg] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [currPin, setCurrPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
 
-  useEffect(() => { (async () => { try { const s = await api.getPinStatus(); setPinStatus(s) } catch {} })() }, [])
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await api.getPinStatus();
+        setPinStatus(s);
+      } catch {}
+    })();
+  }, []);
 
   const handleLinkWallet = async () => {
-    setWalletStatus(null)
-    setWalletLoading(true)
+    setWalletStatus(null);
+    setWalletLoading(true);
     try {
-      const candidates = walletService.getAvailableWallets().filter((wallet) => wallet.detected && wallet.adapter)
-      const adapter = candidates[0]?.adapter as string | undefined
+      const candidates = walletService
+        .getAvailableWallets()
+        .filter((wallet) => wallet.detected && wallet.adapter);
+      const adapter = candidates[0]?.adapter as string | undefined;
       if (!adapter) {
-        throw new Error('No SUI wallet detected. Open Suiet, Martian, Nightly, Surf, or Slush and try again.')
+        throw new Error(
+          "No SUI wallet detected. Open Suiet, Martian, Nightly, Surf, or Slush and try again.",
+        );
       }
-      const address = await walletService.connectWallet(adapter)
-      const challenge = await api.getWalletChallenge({ chain: 'sui', address })
-      const signature = await walletService.signMessage(adapter, challenge.message)
-      await api.linkWallet({ address, chain: 'sui', signature, nonce: challenge.nonce })
-      setWalletStatus({ tone: 'success', message: `Wallet ${address.slice(0, 4)}… linked successfully.` })
+      const address = await walletService.connectWallet(adapter);
+      const challenge = await api.getWalletChallenge({ chain: "sui", address });
+      const signature = await walletService.signMessage(
+        adapter,
+        challenge.message,
+      );
+      await api.linkWallet({
+        address,
+        chain: "sui",
+        signature,
+        nonce: challenge.nonce,
+      });
+      setWalletStatus({
+        tone: "success",
+        message: `Wallet ${address.slice(0, 4)}… linked successfully.`,
+      });
     } catch (err: any) {
-      setWalletStatus({ tone: 'error', message: err.message || 'Unable to link wallet' })
+      setWalletStatus({
+        tone: "error",
+        message: err.message || "Unable to link wallet",
+      });
     } finally {
-      setWalletLoading(false)
+      setWalletLoading(false);
     }
-  }
+  };
 
-  const tabs: Array<{ id: 'caps' | 'payout' | 'security'; label: string }> = [
-    { id: 'caps', label: 'Caps' },
-    { id: 'payout', label: 'Payout' },
-    { id: 'security', label: 'Security' },
-  ]
+  const tabs: Array<{ id: "caps" | "payout" | "security"; label: string }> = [
+    { id: "caps", label: "Caps" },
+    { id: "payout", label: "Payout" },
+    { id: "security", label: "Security" },
+  ];
 
   const handleChangePassword = async () => {
-    setChangeStatus(null)
+    setChangeStatus(null);
     if (currentPassword.length < 8) {
-      setChangeStatus({ tone: 'error', message: 'Current password must be at least 8 characters' })
-      return
+      setChangeStatus({
+        tone: "error",
+        message: "Current password must be at least 8 characters",
+      });
+      return;
     }
     if (newPassword.length < 8) {
-      setChangeStatus({ tone: 'error', message: 'New password must be at least 8 characters' })
-      return
+      setChangeStatus({
+        tone: "error",
+        message: "New password must be at least 8 characters",
+      });
+      return;
     }
     if (newPassword !== confirmPassword) {
-      setChangeStatus({ tone: 'error', message: 'Passwords do not match' })
-      return
+      setChangeStatus({ tone: "error", message: "Passwords do not match" });
+      return;
     }
-    setChangeLoading(true)
+    setChangeLoading(true);
     try {
-      await api.changePassword(currentPassword, newPassword)
-      setChangeStatus({ tone: 'success', message: 'Password updated successfully' })
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
+      await api.changePassword(currentPassword, newPassword);
+      setChangeStatus({
+        tone: "success",
+        message: "Password updated successfully",
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (err: any) {
-      setChangeStatus({ tone: 'error', message: err.message || 'Unable to update password' })
+      setChangeStatus({
+        tone: "error",
+        message: err.message || "Unable to update password",
+      });
     } finally {
-      setChangeLoading(false)
+      setChangeLoading(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -88,7 +140,9 @@ export function ConsumerSettingsPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`rounded-full px-4 py-2 text-sm font-medium ${
-              activeTab === tab.id ? 'bg-sand text-ink' : 'bg-white/5 text-fog hover:text-parchment'
+              activeTab === tab.id
+                ? "bg-sand text-ink"
+                : "bg-white/5 text-fog hover:text-parchment"
             }`}
           >
             {tab.label}
@@ -96,7 +150,7 @@ export function ConsumerSettingsPage() {
         ))}
       </div>
 
-      {activeTab === 'caps' && (
+      {activeTab === "caps" && (
         <Card>
           <CardContent className="p-0">
             <SpendingCapsPage />
@@ -104,7 +158,7 @@ export function ConsumerSettingsPage() {
         </Card>
       )}
 
-      {activeTab === 'payout' && (
+      {activeTab === "payout" && (
         <Card>
           <CardContent className="space-y-4 p-6">
             <div className="flex items-center gap-3">
@@ -112,8 +166,13 @@ export function ConsumerSettingsPage() {
                 <WalletIcon className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-parchment">Linked wallet</p>
-                <p className="text-xs text-fog">Use a SUI wallet (Suiet, Martian, Nightly, Surf, Slush) to re-link your payout wallet.</p>
+                <p className="text-sm font-semibold text-parchment">
+                  Linked wallet
+                </p>
+                <p className="text-xs text-fog">
+                  Use a SUI wallet (Suiet, Martian, Nightly, Surf, Slush) to
+                  re-link your payout wallet.
+                </p>
               </div>
             </div>
             <Button
@@ -122,14 +181,14 @@ export function ConsumerSettingsPage() {
               variant="outline"
               className="w-fit border-white/20 text-parchment hover:text-black"
             >
-              {walletLoading ? 'Linking…' : 'Link browser wallet'}
+              {walletLoading ? "Linking…" : "Link browser wallet"}
             </Button>
             {walletStatus && (
               <div
                 className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
-                  walletStatus.tone === 'success'
-                    ? 'border-sand/40 bg-sand/10 text-sand'
-                    : 'border-ember/30 bg-ember/10 text-ember'
+                  walletStatus.tone === "success"
+                    ? "border-sand/40 bg-sand/10 text-sand"
+                    : "border-ember/30 bg-ember/10 text-ember"
                 }`}
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
@@ -140,7 +199,7 @@ export function ConsumerSettingsPage() {
         </Card>
       )}
 
-      {activeTab === 'security' && (
+      {activeTab === "security" && (
         <div className="space-y-6">
           <Card>
             <CardContent className="space-y-4 p-6">
@@ -149,13 +208,19 @@ export function ConsumerSettingsPage() {
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-parchment">Change password</p>
-                  <p className="text-xs text-fog">Update your credentials securely from here.</p>
+                  <p className="text-sm font-semibold text-parchment">
+                    Change password
+                  </p>
+                  <p className="text-xs text-fog">
+                    Update your credentials securely from here.
+                  </p>
                 </div>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs uppercase tracking-[0.2em] text-fog">Current password</label>
+                  <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                    Current password
+                  </label>
                   <input
                     type="password"
                     value={currentPassword}
@@ -165,7 +230,9 @@ export function ConsumerSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-[0.2em] text-fog">New password</label>
+                  <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                    New password
+                  </label>
                   <input
                     type="password"
                     value={newPassword}
@@ -174,7 +241,9 @@ export function ConsumerSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-[0.2em] text-fog">Confirm password</label>
+                  <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                    Confirm password
+                  </label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -189,10 +258,14 @@ export function ConsumerSettingsPage() {
                 variant="outline"
                 className="w-fit border-white/20 text-parchment hover:text-black"
               >
-                {changeLoading ? 'Updating…' : 'Update password'}
+                {changeLoading ? "Updating…" : "Update password"}
               </Button>
               {changeStatus && (
-                <p className={`text-sm ${changeStatus.tone === 'success' ? 'text-sand' : 'text-ember'}`}>{changeStatus.message}</p>
+                <p
+                  className={`text-sm ${changeStatus.tone === "success" ? "text-sand" : "text-ember"}`}
+                >
+                  {changeStatus.message}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -204,64 +277,193 @@ export function ConsumerSettingsPage() {
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-parchment">Withdrawal PIN</p>
-                  <p className="text-xs text-fog">Set or change a 4–6 digit PIN required to authorize withdrawals.</p>
+                  <p className="text-sm font-semibold text-parchment">
+                    Withdrawal PIN
+                  </p>
+                  <p className="text-xs text-fog">
+                    Set or change a 4–6 digit PIN required to authorize
+                    withdrawals.
+                  </p>
                 </div>
               </div>
               {!pinStatus?.has_pin ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-fog">New PIN</label>
-                    <input type="password" inputMode="numeric" pattern="[0-9]*" value={newPin} onChange={(e)=>setNewPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                    <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                      New PIN
+                    </label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={newPin}
+                      onChange={(e) =>
+                        setNewPin(
+                          e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                        )
+                      }
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50"
+                    />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-fog">Confirm PIN</label>
-                    <input type="password" inputMode="numeric" pattern="[0-9]*" value={confirmPin} onChange={(e)=>setConfirmPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                    <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                      Confirm PIN
+                    </label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={confirmPin}
+                      onChange={(e) =>
+                        setConfirmPin(
+                          e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                        )
+                      }
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50"
+                    />
                   </div>
                   <Button
-                    onClick={async ()=>{
+                    onClick={async () => {
                       setPinMsg(null);
-                      if (newPin.length<4||newPin.length>6) { setPinMsg({tone:'error',message:'PIN must be 4–6 digits'}); return }
-                      if (newPin!==confirmPin) { setPinMsg({tone:'error',message:'PINs do not match'}); return }
-                      try { await api.setPin(newPin); setPinMsg({tone:'success',message:'PIN set successfully'}); setPinStatus({ has_pin: true }); setNewPin(''); setConfirmPin('') } catch(e:any){ setPinMsg({tone:'error',message:e?.message||'Unable to set PIN'}) }
+                      if (newPin.length < 4 || newPin.length > 6) {
+                        setPinMsg({
+                          tone: "error",
+                          message: "PIN must be 4–6 digits",
+                        });
+                        return;
+                      }
+                      if (newPin !== confirmPin) {
+                        setPinMsg({
+                          tone: "error",
+                          message: "PINs do not match",
+                        });
+                        return;
+                      }
+                      try {
+                        await api.setPin(newPin);
+                        setPinMsg({
+                          tone: "success",
+                          message: "PIN set successfully",
+                        });
+                        setPinStatus({ has_pin: true });
+                        setNewPin("");
+                        setConfirmPin("");
+                      } catch (e: any) {
+                        setPinMsg({
+                          tone: "error",
+                          message: e?.message || "Unable to set PIN",
+                        });
+                      }
                     }}
-                    variant="outline" className="w-fit border-white/20 text-parchment hover:text-black"
-                  >Set PIN</Button>
+                    variant="outline"
+                    className="w-fit border-white/20 text-parchment hover:text-black"
+                  >
+                    Set PIN
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="grid gap-3 md:grid-cols-3">
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-fog">Current PIN</label>
-                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={currPin} onChange={(e)=>setCurrPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                        Current PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={currPin}
+                        onChange={(e) =>
+                          setCurrPin(
+                            e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                          )
+                        }
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50"
+                      />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-fog">New PIN</label>
-                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={newPin} onChange={(e)=>setNewPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                        New PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={newPin}
+                        onChange={(e) =>
+                          setNewPin(
+                            e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                          )
+                        }
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50"
+                      />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-fog">Confirm PIN</label>
-                      <input type="password" inputMode="numeric" pattern="[0-9]*" value={confirmPin} onChange={(e)=>setConfirmPin(e.target.value.replace(/[^0-9]/g,'').slice(0,6))} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50" />
+                      <label className="text-xs uppercase tracking-[0.2em] text-fog">
+                        Confirm PIN
+                      </label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={confirmPin}
+                        onChange={(e) =>
+                          setConfirmPin(
+                            e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                          )
+                        }
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-parchment outline-none focus:border-sand/50"
+                      />
                     </div>
                   </div>
                   <Button
-                    onClick={async ()=>{
+                    onClick={async () => {
                       setPinMsg(null);
-                      if (newPin.length<4||newPin.length>6) { setPinMsg({tone:'error',message:'PIN must be 4–6 digits'}); return }
-                      if (newPin!==confirmPin) { setPinMsg({tone:'error',message:'PINs do not match'}); return }
-                      try { await api.changePin(currPin, newPin); setPinMsg({tone:'success',message:'PIN updated'}); setCurrPin(''); setNewPin(''); setConfirmPin('') } catch(e:any){ setPinMsg({tone:'error',message:e?.message||'Unable to update PIN'}) }
+                      if (newPin.length < 4 || newPin.length > 6) {
+                        setPinMsg({
+                          tone: "error",
+                          message: "PIN must be 4–6 digits",
+                        });
+                        return;
+                      }
+                      if (newPin !== confirmPin) {
+                        setPinMsg({
+                          tone: "error",
+                          message: "PINs do not match",
+                        });
+                        return;
+                      }
+                      try {
+                        await api.changePin(currPin, newPin);
+                        setPinMsg({ tone: "success", message: "PIN updated" });
+                        setCurrPin("");
+                        setNewPin("");
+                        setConfirmPin("");
+                      } catch (e: any) {
+                        setPinMsg({
+                          tone: "error",
+                          message: e?.message || "Unable to update PIN",
+                        });
+                      }
                     }}
-                    variant="outline" className="w-fit border-white/20 text-parchment hover:text-black"
-                  >Update PIN</Button>
+                    variant="outline"
+                    className="w-fit border-white/20 text-parchment hover:text-black"
+                  >
+                    Update PIN
+                  </Button>
                 </div>
               )}
               {pinMsg && (
-                <p className={`text-sm ${pinMsg.tone === 'success' ? 'text-sand' : 'text-ember'}`}>{pinMsg.message}</p>
+                <p
+                  className={`text-sm ${pinMsg.tone === "success" ? "text-sand" : "text-ember"}`}
+                >
+                  {pinMsg.message}
+                </p>
               )}
             </CardContent>
           </Card>
         </div>
       )}
     </div>
-  )
+  );
 }

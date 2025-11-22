@@ -1,16 +1,24 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/services/api';
-import type { EarningsData } from '@/services/api';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, Calendar, Activity } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/services/api";
+import type { EarningsData } from "@/services/api";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { DollarSign, TrendingUp, Calendar, Activity } from "lucide-react";
 
 export function EarningsPage() {
   const [earnings, setEarnings] = useState<EarningsData | null>(null);
-  const [period, setPeriod] = useState<'30' | '90'>('30');
+  const [period, setPeriod] = useState<"30" | "90">("30");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadEarnings();
@@ -19,11 +27,11 @@ export function EarningsPage() {
   const loadEarnings = async () => {
     setIsLoading(true);
     try {
-      const days = period === '30' ? 30 : 90;
+      const days = period === "30" ? 30 : 90;
       const data = await api.getProviderEarnings(days);
       setEarnings(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load earnings');
+      setError(err.message || "Failed to load earnings");
     } finally {
       setIsLoading(false);
     }
@@ -38,9 +46,9 @@ export function EarningsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -48,26 +56,30 @@ export function EarningsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-medium text-parchment">Earnings Analytics</h2>
-          <p className="text-sm text-fog mt-1">Track your revenue and performance</p>
+          <h2 className="text-2xl font-medium text-parchment">
+            Earnings Analytics
+          </h2>
+          <p className="text-sm text-fog mt-1">
+            Track your revenue and performance
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setPeriod('30')}
+            onClick={() => setPeriod("30")}
             className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-              period === '30'
-                ? 'bg-white/10 text-parchment'
-                : 'bg-white/5 text-fog hover:text-parchment'
+              period === "30"
+                ? "bg-white/10 text-parchment"
+                : "bg-white/5 text-fog hover:text-parchment"
             }`}
           >
             30 Days
           </button>
           <button
-            onClick={() => setPeriod('90')}
+            onClick={() => setPeriod("90")}
             className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-              period === '90'
-                ? 'bg-white/10 text-parchment'
-                : 'bg-white/5 text-fog hover:text-parchment'
+              period === "90"
+                ? "bg-white/10 text-parchment"
+                : "bg-white/5 text-fog hover:text-parchment"
             }`}
           >
             90 Days
@@ -148,7 +160,9 @@ export function EarningsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-medium text-parchment">Earnings Over Time</h2>
+              <h2 className="text-xl font-medium text-parchment">
+                Earnings Over Time
+              </h2>
               <Calendar className="w-5 h-5 text-fog" />
             </div>
             <ResponsiveContainer width="100%" height={350}>
@@ -163,21 +177,24 @@ export function EarningsPage() {
                 <XAxis
                   dataKey="date"
                   stroke="#B9B1A5"
-                  tick={{ fill: '#B9B1A5', fontSize: 12 }}
+                  tick={{ fill: "#B9B1A5", fontSize: 12 }}
                 />
                 <YAxis
                   stroke="#B9B1A5"
-                  tick={{ fill: '#B9B1A5', fontSize: 12 }}
+                  tick={{ fill: "#B9B1A5", fontSize: 12 }}
                   tickFormatter={(value) => `$${value}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#111111',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: '#E6E2DC',
+                    backgroundColor: "#111111",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "#E6E2DC",
                   }}
-                  formatter={(value: any) => [formatCurrency(value), 'Earnings']}
+                  formatter={(value: any) => [
+                    formatCurrency(value),
+                    "Earnings",
+                  ]}
                 />
                 <Area
                   type="monotone"

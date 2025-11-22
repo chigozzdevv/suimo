@@ -1,38 +1,40 @@
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardContent } from '@/components/ui/card'
-import { api } from '@/services/api'
-import type { Receipt } from '@/services/api'
-import { ExternalLink } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/services/api";
+import type { Receipt } from "@/services/api";
+import { ExternalLink } from "lucide-react";
 
 export function ReceiptsPage() {
-  const [receipts, setReceipts] = useState<Receipt[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadReceipts()
-  }, [])
+    loadReceipts();
+  }, []);
 
   const loadReceipts = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const data = await api.getReceipts(50)
-      setReceipts(data)
+      const data = await api.getReceipts(50);
+      setReceipts(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load receipts')
+      setError(err.message || "Failed to load receipts");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  if (isLoading) return <div className="text-fog">Loading receipts…</div>
-  if (error) return <div className="text-ember">{error}</div>
+  if (isLoading) return <div className="text-fog">Loading receipts…</div>;
+  if (error) return <div className="text-ember">{error}</div>;
 
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
-        <h2 className="text-xl font-semibold text-parchment">Cryptographic proofs</h2>
+        <h2 className="text-xl font-semibold text-parchment">
+          Cryptographic proofs
+        </h2>
         {receipts.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-fog">
             No receipts yet. Start a crawl to generate signed proof-of-access.
@@ -50,7 +52,9 @@ export function ReceiptsPage() {
                   <span>ID: {receipt._id}</span>
                   <span>{new Date(receipt.ts).toLocaleString()}</span>
                 </div>
-                <p className="mt-2 text-parchment">Request {receipt.request_id}</p>
+                <p className="mt-2 text-parchment">
+                  Request {receipt.request_id}
+                </p>
                 <p>Paid Total: {receipt.json?.paid_total ?? 0} USD</p>
                 {receipt.json?.provider_onchain_tx && (
                   <div className="mt-1 flex items-center gap-2">
@@ -61,17 +65,20 @@ export function ReceiptsPage() {
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-sand hover:text-parchment transition-colors"
                     >
-                      {receipt.json.provider_onchain_tx.slice(0, 8)}...{receipt.json.provider_onchain_tx.slice(-6)}
+                      {receipt.json.provider_onchain_tx.slice(0, 8)}...
+                      {receipt.json.provider_onchain_tx.slice(-6)}
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 )}
-                <p className="mt-2 truncate text-xs text-fog/70">Sig: {receipt.ed25519_sig}</p>
+                <p className="mt-2 truncate text-xs text-fog/70">
+                  Sig: {receipt.ed25519_sig}
+                </p>
               </motion.div>
             ))}
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

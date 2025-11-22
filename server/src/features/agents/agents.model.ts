@@ -1,4 +1,4 @@
-import { getDb } from '@/config/db.js';
+import { getDb } from "@/config/db.js";
 
 export type AgentDoc = {
   _id: string;
@@ -6,11 +6,13 @@ export type AgentDoc = {
   name: string;
   client_key: string; // bearer token
   client_id?: string;
-  status?: 'active' | 'revoked';
+  status?: "active" | "revoked";
 };
 
 export async function findAgentByKey(key: string) {
   const db = await getDb();
-  const doc = await db.collection<AgentDoc>('agents').findOne({ client_key: key, status: { $ne: 'revoked' } });
+  const doc = await db
+    .collection<AgentDoc>("agents")
+    .findOne({ client_key: key, status: { $ne: "revoked" } });
   return doc || null;
 }

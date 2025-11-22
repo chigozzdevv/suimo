@@ -1,8 +1,8 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const createResourceBase = z.object({
   title: z.string().min(2),
-  type: z.enum(['site', 'dataset', 'file']),
+  type: z.enum(["site", "dataset", "file"]),
   format: z.string(),
   domain: z.string().optional(),
   path: z.string().optional(),
@@ -13,8 +13,8 @@ const createResourceBase = z.object({
   size_bytes: z.number().int().nonnegative().optional(),
   price_per_kb: z.number().nonnegative().optional(),
   price_flat: z.number().nonnegative().optional(),
-  visibility: z.enum(['public', 'restricted']).default('public'),
-  modes: z.array(z.enum(['raw', 'summary'])).default(['raw']),
+  visibility: z.enum(["public", "restricted"]).default("public"),
+  modes: z.array(z.enum(["raw", "summary"])).default(["raw"]),
   connector_id: z.string().optional(),
   sample_preview: z.string().optional(),
   allow_agent_ids: z.array(z.string()).optional(),
@@ -22,16 +22,30 @@ const createResourceBase = z.object({
   walrus_blob_id: z.string().optional(),
   walrus_quilt_id: z.string().optional(),
   walrus_blob_object_id: z.string().optional(),
-  cipher_meta: z.object({ algo: z.string(), size_bytes: z.number().int().nonnegative(), content_type: z.string().optional() }).optional(),
+  cipher_meta: z
+    .object({
+      algo: z.string(),
+      size_bytes: z.number().int().nonnegative(),
+      content_type: z.string().optional(),
+    })
+    .optional(),
   seal_policy_id: z.string().optional(),
 });
 
-export const createResourceInput = createResourceBase
-  .superRefine((val, ctx) => {
-    if (val.type === 'site' && (!val.domain || val.domain.trim().length === 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'domain is required for site resources', path: ['domain'] });
+export const createResourceInput = createResourceBase.superRefine(
+  (val, ctx) => {
+    if (
+      val.type === "site" &&
+      (!val.domain || val.domain.trim().length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "domain is required for site resources",
+        path: ["domain"],
+      });
     }
-  });
+  },
+);
 
 export const updateResourceInput = createResourceBase.partial();
 

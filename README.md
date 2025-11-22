@@ -30,10 +30,10 @@ Suimo lets AI agents fetch authorized content with consent, metering, and instan
 
 ## 2) How it works
 
-1) Agents authenticate and discover resources via MCP (OAuth 2.1 + PKCE).
-2) For file/dataset uploads, the client encrypts locally with Seal and uploads the encrypted envelope; the server stores it on Walrus.
-3) For fetches, Suimo computes cost from size/price, captures the custodial hold, pays providers on Sui, fetches the ciphertext from Walrus, authorizes decryption via Seal (policy session), and returns plaintext chunks.
-4) Every access yields an Ed25519-signed receipt, with links to Sui Explorer for payouts.
+1. Agents authenticate and discover resources via MCP (OAuth 2.1 + PKCE).
+2. For file/dataset uploads, the client encrypts locally with Seal and uploads the encrypted envelope; the server stores it on Walrus.
+3. For fetches, Suimo computes cost from size/price, captures the custodial hold, pays providers on Sui, fetches the ciphertext from Walrus, authorizes decryption via Seal (policy session), and returns plaintext chunks.
+4. Every access yields an Ed25519-signed receipt, with links to Sui Explorer for payouts.
 
 ## 3) Architecture
 

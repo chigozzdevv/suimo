@@ -1,19 +1,30 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { api } from '@/services/api';
-import type { CatalogResource } from '@/services/api';
-import { Search, FileText, Filter, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/services/api";
+import type { CatalogResource } from "@/services/api";
+import {
+  Search,
+  FileText,
+  Filter,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 export function ResourcesPage() {
   const [resources, setResources] = useState<CatalogResource[]>([]);
-  const [filteredResources, setFilteredResources] = useState<CatalogResource[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filteredResources, setFilteredResources] = useState<CatalogResource[]>(
+    [],
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [expandedResourceId, setExpandedResourceId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     loadResources();
@@ -29,7 +40,7 @@ export function ResourcesPage() {
       const data = await api.getCatalogResources();
       setResources(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load resources');
+      setError(err.message || "Failed to load resources");
     } finally {
       setIsLoading(false);
     }
@@ -41,14 +52,16 @@ export function ResourcesPage() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter((r) => {
-        const title = String(r.title || '').toLowerCase();
-        const sum = String(r.summary || '').toLowerCase();
-        const tagMatch = Array.isArray(r.tags) && r.tags.some((t) => String(t).toLowerCase().includes(q));
+        const title = String(r.title || "").toLowerCase();
+        const sum = String(r.summary || "").toLowerCase();
+        const tagMatch =
+          Array.isArray(r.tags) &&
+          r.tags.some((t) => String(t).toLowerCase().includes(q));
         return title.includes(q) || sum.includes(q) || tagMatch;
       });
     }
 
-    if (filterType !== 'all') {
+    if (filterType !== "all") {
       filtered = filtered.filter((r) => r.type === filterType);
     }
 
@@ -64,13 +77,13 @@ export function ResourcesPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
-  const resourceTypes = ['all', ...new Set(resources.map((r) => r.type))];
+  const resourceTypes = ["all", ...new Set(resources.map((r) => r.type))];
 
   return (
     <div className="space-y-6">
@@ -164,8 +177,8 @@ export function ResourcesPage() {
                     onClick={() => setFilterType(type)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
                       filterType === type
-                        ? 'bg-white/10 text-parchment'
-                        : 'bg-white/5 text-fog hover:text-parchment'
+                        ? "bg-white/10 text-parchment"
+                        : "bg-white/5 text-fog hover:text-parchment"
                     }`}
                   >
                     {type}
@@ -178,7 +191,9 @@ export function ResourcesPage() {
               <div className="text-center py-12">
                 <FileText className="w-12 h-12 text-fog mx-auto mb-4" />
                 <p className="text-fog mb-2">No resources found</p>
-                <p className="text-sm text-fog/70">Try adjusting your search or filters</p>
+                <p className="text-sm text-fog/70">
+                  Try adjusting your search or filters
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -189,43 +204,49 @@ export function ResourcesPage() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-parchment font-medium">{resource.title}</h3>
+                        <h3 className="text-parchment font-medium">
+                          {resource.title}
+                        </h3>
                         {resource.verified && (
                           <CheckCircle className="w-4 h-4 text-parchment" />
                         )}
                       </div>
-                        {(resource.summary || resource.sample_preview) && (
-                          <div className="text-sm text-fog">
-                            <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-widest text-white/40">
-                              <span>Preview</span>
-                              <button
-                                className="flex items-center gap-1 text-[11px] text-parchment"
-                                onClick={() =>
-                                  setExpandedResourceId(
-                                    expandedResourceId === resource._id ? null : resource._id
-                                  )
-                                }
-                              >
-                                {expandedResourceId === resource._id ? (
-                                  <>
-                                    <EyeOff className="h-3 w-3" /> Hide
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="h-3 w-3" /> View
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                            <p
-                              className={`rounded-lg bg-white/5 p-3 text-xs text-fog ${
-                                expandedResourceId === resource._id ? '' : 'line-clamp-3'
-                              }`}
+                      {(resource.summary || resource.sample_preview) && (
+                        <div className="text-sm text-fog">
+                          <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-widest text-white/40">
+                            <span>Preview</span>
+                            <button
+                              className="flex items-center gap-1 text-[11px] text-parchment"
+                              onClick={() =>
+                                setExpandedResourceId(
+                                  expandedResourceId === resource._id
+                                    ? null
+                                    : resource._id,
+                                )
+                              }
                             >
-                              {resource.sample_preview || resource.summary}
-                            </p>
+                              {expandedResourceId === resource._id ? (
+                                <>
+                                  <EyeOff className="h-3 w-3" /> Hide
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-3 w-3" /> View
+                                </>
+                              )}
+                            </button>
                           </div>
-                        )}
+                          <p
+                            className={`rounded-lg bg-white/5 p-3 text-xs text-fog ${
+                              expandedResourceId === resource._id
+                                ? ""
+                                : "line-clamp-3"
+                            }`}
+                          >
+                            {resource.sample_preview || resource.summary}
+                          </p>
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="text-xs px-2 py-1 rounded bg-white/5 text-parchment">
                           {resource.type}
@@ -241,7 +262,10 @@ export function ResourcesPage() {
                         {resource.tags && resource.tags.length > 0 && (
                           <div className="flex gap-1">
                             {resource.tags.slice(0, 3).map((tag, i) => (
-                              <span key={i} className="text-xs px-2 py-1 rounded bg-ember/10 text-ember">
+                              <span
+                                key={i}
+                                className="text-xs px-2 py-1 rounded bg-ember/10 text-ember"
+                              >
                                 {tag}
                               </span>
                             ))}

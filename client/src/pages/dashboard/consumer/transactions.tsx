@@ -1,15 +1,29 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/services/api';
-import type { Receipt } from '@/services/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Receipt as ReceiptIcon, TrendingDown, DollarSign, Calendar, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/services/api";
+import type { Receipt } from "@/services/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  Receipt as ReceiptIcon,
+  TrendingDown,
+  DollarSign,
+  Calendar,
+  ExternalLink,
+} from "lucide-react";
 
 export function TransactionsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadReceipts();
@@ -21,7 +35,7 @@ export function TransactionsPage() {
       const data = await api.getReceipts();
       setReceipts(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load receipts');
+      setError(err.message || "Failed to load receipts");
     } finally {
       setIsLoading(false);
     }
@@ -36,9 +50,9 @@ export function TransactionsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -48,9 +62,9 @@ export function TransactionsPage() {
 
   const spendingData = receipts
     .reduce((acc: any[], receipt) => {
-      const date = new Date(receipt.ts).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
+      const date = new Date(receipt.ts).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
       });
       const existing = acc.find((item) => item.date === date);
       if (existing) {
@@ -125,7 +139,9 @@ export function TransactionsPage() {
                 </div>
               </div>
               <div className="text-2xl font-semibold text-parchment">
-                {formatCurrency(receipts.length > 0 ? totalSpent / receipts.length : 0)}
+                {formatCurrency(
+                  receipts.length > 0 ? totalSpent / receipts.length : 0,
+                )}
               </div>
               <div className="text-sm text-fog">Average</div>
               <div className="text-xs text-fog mt-1">Per transaction</div>
@@ -142,7 +158,9 @@ export function TransactionsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-medium text-parchment">Spending History</h2>
+              <h2 className="text-xl font-medium text-parchment">
+                Spending History
+              </h2>
               <Calendar className="w-5 h-5 text-fog" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -151,28 +169,28 @@ export function TransactionsPage() {
                 <XAxis
                   dataKey="date"
                   stroke="#B9B1A5"
-                  tick={{ fill: '#B9B1A5', fontSize: 12 }}
+                  tick={{ fill: "#B9B1A5", fontSize: 12 }}
                 />
                 <YAxis
                   stroke="#B9B1A5"
-                  tick={{ fill: '#B9B1A5', fontSize: 12 }}
+                  tick={{ fill: "#B9B1A5", fontSize: 12 }}
                   tickFormatter={(value) => `$${value}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#111111',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: '#E6E2DC',
+                    backgroundColor: "#111111",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "8px",
+                    color: "#E6E2DC",
                   }}
-                  formatter={(value: any) => [formatCurrency(value), 'Spent']}
+                  formatter={(value: any) => [formatCurrency(value), "Spent"]}
                 />
                 <Line
                   type="monotone"
                   dataKey="amount"
                   stroke="#D8C8A8"
                   strokeWidth={2}
-                  dot={{ fill: '#D8C8A8', r: 4 }}
+                  dot={{ fill: "#D8C8A8", r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -188,7 +206,9 @@ export function TransactionsPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-medium text-parchment">Transaction History</h2>
+              <h2 className="text-xl font-medium text-parchment">
+                Transaction History
+              </h2>
               <ReceiptIcon className="w-5 h-5 text-fog" />
             </div>
             {receipts.length === 0 ? (
@@ -206,20 +226,20 @@ export function TransactionsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="text-parchment font-medium">
-                          {receipt.json?.resource?.title || 'Unknown Resource'}
+                          {receipt.json?.resource?.title || "Unknown Resource"}
                         </h3>
                         <span className="text-xs px-2 py-1 rounded bg-white/5 text-parchment">
-                          {receipt.json?.mode || 'N/A'}
+                          {receipt.json?.mode || "N/A"}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 mt-1">
                         <span className="text-xs text-fog">
-                          {new Date(receipt.ts).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(receipt.ts).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </span>
                         <span className="text-xs text-fog">

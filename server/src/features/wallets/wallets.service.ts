@@ -1,23 +1,37 @@
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { encryptSecret } from '@/services/crypto/keystore.js';
-import { upsertWalletKey, findWalletKey } from '@/features/wallets/keys.model.js';
-import { getOrInitWallet, debitWallet, creditWallet } from '@/features/wallets/wallets.model.js';
-import { getBalances } from '@/services/sui/sui.service.js';
-import { insertDeposit } from '@/features/payments/deposits.model.js';
-import { insertWithdrawal, updateWithdrawal } from '@/features/payments/withdrawals.model.js';
-import { getDb } from '@/config/db.js';
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { encryptSecret } from "@/services/crypto/keystore.js";
+import {
+  upsertWalletKey,
+  findWalletKey,
+} from "@/features/wallets/keys.model.js";
+import {
+  getOrInitWallet,
+  debitWallet,
+  creditWallet,
+} from "@/features/wallets/wallets.model.js";
+import { getBalances } from "@/services/sui/sui.service.js";
+import { insertDeposit } from "@/features/payments/deposits.model.js";
+import {
+  insertWithdrawal,
+  updateWithdrawal,
+} from "@/features/payments/withdrawals.model.js";
+import { getDb } from "@/config/db.js";
 
-const MAX_TRANSFER_AMOUNT = Number(process.env.WALLET_MAX_REQUEST_AMOUNT || 5000);
-const DAILY_REQUEST_LIMIT = Number(process.env.WALLET_DAILY_REQUEST_LIMIT || 5000);
+const MAX_TRANSFER_AMOUNT = Number(
+  process.env.WALLET_MAX_REQUEST_AMOUNT || 5000,
+);
+const DAILY_REQUEST_LIMIT = Number(
+  process.env.WALLET_DAILY_REQUEST_LIMIT || 5000,
+);
 
 export async function initUserWallets(userId: string) {
-  await getOrInitWallet(userId, 'payer');
-  await getOrInitWallet(userId, 'payout');
-  await ensureSuiKey(userId, 'payer');
-  await ensureSuiKey(userId, 'payout');
+  await getOrInitWallet(userId, "payer");
+  await getOrInitWallet(userId, "payout");
+  await ensureSuiKey(userId, "payer");
+  await ensureSuiKey(userId, "payout");
 }
 
-export async function ensureSuiKey(userId: string, role: 'payer' | 'payout') {
+export async function ensureSuiKey(userId: string, role: "payer" | "payout") {
   const existing = await findWalletKey(userId, role);
   if (existing) return existing;
   const kp = Ed25519Keypair.generate();
@@ -26,7 +40,7 @@ export async function ensureSuiKey(userId: string, role: 'payer' | 'payout') {
     _id: crypto.randomUUID(),
     owner_user_id: userId,
     role,
-    chain: 'sui' as const,
+    chain: "sui" as const,
     public_key: kp.getPublicKey().toSuiAddress(),
     enc,
     created_at: new Date().toISOString(),
@@ -36,75 +50,108 @@ export async function ensureSuiKey(userId: string, role: 'payer' | 'payout') {
 }
 
 export async function getWallets(userId: string) {
-  const payer = await getOrInitWallet(userId, 'payer');
-  const payout = await getOrInitWallet(userId, 'payout');
-  const payerKey = (await findWalletKey(userId, 'payer')) || (await ensureSuiKey(userId, 'payer'));
-  const payoutKey = (await findWalletKey(userId, 'payout')) || (await ensureSuiKey(userId, 'payout'));
-  const payerOnchain = payerKey?.public_key ? await getBalances(payerKey.public_key) : { sui: 0, wal: 0 };
-  const payoutOnchain = payoutKey?.public_key ? await getBalances(payoutKey.public_key) : { sui: 0, wal: 0 };
+  const payer = await getOrInitWallet(userId, "payer");
+  const payout = await getOrInitWallet(userId, "payout");
+  const payerKey =
+    (await findWalletKey(userId, "payer")) ||
+    (await ensureSuiKey(userId, "payer"));
+  const payoutKey =
+    (await findWalletKey(userId, "payout")) ||
+    (await ensureSuiKey(userId, "payout"));
+  const payerOnchain = payerKey?.public_key
+    ? await getBalances(payerKey.public_key)
+    : { sui: 0, wal: 0 };
+  const payoutOnchain = payoutKey?.public_key
+    ? await getBalances(payoutKey.public_key)
+    : { sui: 0, wal: 0 };
   return {
     payer: { ...payer, address: payerKey?.public_key, onchain: payerOnchain },
-    payout: { ...payout, address: payoutKey?.public_key, onchain: payoutOnchain },
+    payout: {
+      ...payout,
+      address: payoutKey?.public_key,
+      onchain: payoutOnchain,
+    },
   };
 }
 
-export async function createDepositService(userId: string, role: 'payer' | 'payout', amount: number) {
+export async function createDepositService(
+  userId: string,
+  role: "payer" | "payout",
+  amount: number,
+) {
   if (amount > MAX_TRANSFER_AMOUNT) {
-    throw new Error('AMOUNT_EXCEEDS_LIMIT');
+    throw new Error("AMOUNT_EXCEEDS_LIMIT");
   }
   const db = await getDb();
   const start = new Date();
   start.setUTCHours(0, 0, 0, 0);
   const totals = await db
-    .collection('deposits')
+    .collection("deposits")
     .aggregate([
-      { $match: { user_id: userId, created_at: { $gte: start.toISOString() } } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
+      {
+        $match: { user_id: userId, created_at: { $gte: start.toISOString() } },
+      },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
     ])
     .toArray();
   const used = totals[0]?.total || 0;
   if (used + amount > DAILY_REQUEST_LIMIT) {
-    throw new Error('DAILY_LIMIT_REACHED');
+    throw new Error("DAILY_LIMIT_REACHED");
   }
-  const depId = 'dep_' + crypto.randomUUID();
-  await creditWallet(userId, role, amount, 'deposit_request', depId);
+  const depId = "dep_" + crypto.randomUUID();
+  await creditWallet(userId, role, amount, "deposit_request", depId);
   await insertDeposit({
     _id: depId,
     user_id: userId,
     wallet_role: role,
     amount,
-    state: 'confirmed',
+    state: "confirmed",
     instructions: null as any,
     created_at: new Date().toISOString(),
   });
   return { id: depId, instructions: null as any };
 }
 
-import { verifyPin, getPin } from '@/features/wallets/pin.model.js';
+import { verifyPin, getPin } from "@/features/wallets/pin.model.js";
 
-export async function createWithdrawalService(userId: string, role: 'payer' | 'payout', amount: number, to: string, pin?: string) {
+export async function createWithdrawalService(
+  userId: string,
+  role: "payer" | "payout",
+  amount: number,
+  to: string,
+  pin?: string,
+) {
   if (amount > MAX_TRANSFER_AMOUNT) {
-    throw new Error('AMOUNT_EXCEEDS_LIMIT');
+    throw new Error("AMOUNT_EXCEEDS_LIMIT");
   }
-  const pinDoc = await getPin(userId)
+  const pinDoc = await getPin(userId);
   if (pinDoc?.hash) {
-    if (!pin) throw new Error('PIN_REQUIRED')
-    const verdict = await verifyPin(userId, pin)
-    if (verdict === 'locked') throw new Error('PIN_LOCKED')
-    if (verdict === 'invalid') throw new Error('PIN_INVALID')
-    if (verdict === 'not_set') throw new Error('PIN_NOT_SET')
+    if (!pin) throw new Error("PIN_REQUIRED");
+    const verdict = await verifyPin(userId, pin);
+    if (verdict === "locked") throw new Error("PIN_LOCKED");
+    if (verdict === "invalid") throw new Error("PIN_INVALID");
+    if (verdict === "not_set") throw new Error("PIN_NOT_SET");
   }
-  const wId = 'wd_' + crypto.randomUUID();
-  await debitWallet(userId, role, amount, 'withdrawal', wId);
-  await insertWithdrawal({ _id: wId, user_id: userId, wallet_role: role, amount, to, state: 'pending', created_at: new Date().toISOString() });
-  await updateWithdrawal(wId, { state: 'sent', tx_hash: undefined });
+  const wId = "wd_" + crypto.randomUUID();
+  await debitWallet(userId, role, amount, "withdrawal", wId);
+  await insertWithdrawal({
+    _id: wId,
+    user_id: userId,
+    wallet_role: role,
+    amount,
+    to,
+    state: "pending",
+    created_at: new Date().toISOString(),
+  });
+  await updateWithdrawal(wId, { state: "sent", tx_hash: undefined });
   return { id: wId, tx_hash: null as any };
 }
 
 export async function listWithdrawalsService(userId: string, limit = 50) {
-  const { getDb } = await import('@/config/db.js');
+  const { getDb } = await import("@/config/db.js");
   const db = await getDb();
-  return db.collection('withdrawals')
+  return db
+    .collection("withdrawals")
     .find({ user_id: userId } as any)
     .sort({ created_at: -1 })
     .limit(limit)
@@ -112,9 +159,10 @@ export async function listWithdrawalsService(userId: string, limit = 50) {
 }
 
 export async function listDepositsService(userId: string, limit = 50) {
-  const { getDb } = await import('@/config/db.js');
+  const { getDb } = await import("@/config/db.js");
   const db = await getDb();
-  return db.collection('deposits')
+  return db
+    .collection("deposits")
     .find({ user_id: userId } as any)
     .sort({ created_at: -1 })
     .limit(limit)

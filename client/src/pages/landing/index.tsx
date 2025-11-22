@@ -1,17 +1,17 @@
-import { Hero } from './hero'
-import { FeatureGrid } from './feature-grid'
-import { TheProblem } from './the-problem'
-import { HowItWorks } from './how-it-works'
-import { PreviewMarkets } from './preview-markets'
-import { CtaBand } from './cta-band'
-import { SiteHeader } from './site-header'
-import { SiteFooter } from './site-footer'
-import { SectionDivider } from './section-divider'
-import { WhySuimo } from './why-suimo'
-import { FAQ } from './faq'
+import { Hero } from "./hero";
+import { FeatureGrid } from "./feature-grid";
+import { TheProblem } from "./the-problem";
+import { HowItWorks } from "./how-it-works";
+import { PreviewMarkets } from "./preview-markets";
+import { CtaBand } from "./cta-band";
+import { SiteHeader } from "./site-header";
+import { SiteFooter } from "./site-footer";
+import { SectionDivider } from "./section-divider";
+import { WhySuimo } from "./why-suimo";
+import { FAQ } from "./faq";
 
 export function LandingPage() {
-  const year = new Date().getFullYear()
+  const year = new Date().getFullYear();
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden section-bg text-parchment">
@@ -63,5 +63,5 @@ export function LandingPage() {
       </main>
       <SiteFooter year={year} />
     </div>
-  )
+  );
 }

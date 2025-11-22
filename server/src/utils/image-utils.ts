@@ -1,29 +1,34 @@
 export function getFaviconUrlForDomain(domain: string): string {
-  const d = String(domain).replace(/^https?:\/\//, '').replace(/\/$/, '')
-  return `https://icons.duckduckgo.com/ip3/${encodeURIComponent(d)}.ico`
+  const d = String(domain)
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+  return `https://icons.duckduckgo.com/ip3/${encodeURIComponent(d)}.ico`;
 }
 
-const FILE_TYPE_CONFIGS: Record<string, { bg: string; fg: string; icon: string; label: string }> = {
-  json: { bg: '#0e1120', fg: '#E07555', icon: '{}', label: 'JSON' },
-  csv: { bg: '#0e1120', fg: '#5fb3b3', icon: '⚏', label: 'CSV' },
-  xml: { bg: '#0e1120', fg: '#ec5f67', icon: '‹›', label: 'XML' },
-  txt: { bg: '#0e1120', fg: '#B9B1A5', icon: '≡', label: 'TXT' },
-  pdf: { bg: '#0e1120', fg: '#f97583', icon: '⎙', label: 'PDF' },
-  html: { bg: '#0e1120', fg: '#f99157', icon: '‹/›', label: 'HTML' },
-  md: { bg: '#0e1120', fg: '#6c9ef8', icon: 'M↓', label: 'MD' },
-  sql: { bg: '#0e1120', fg: '#8ec07c', icon: '⚑', label: 'SQL' },
-  yaml: { bg: '#0e1120', fg: '#c792ea', icon: '⋮', label: 'YAML' },
-  js: { bg: '#0e1120', fg: '#f7df1e', icon: 'JS', label: 'JS' },
-  ts: { bg: '#0e1120', fg: '#3178c6', icon: 'TS', label: 'TS' },
-  py: { bg: '#0e1120', fg: '#61afef', icon: 'Py', label: 'PY' },
-  zip: { bg: '#0e1120', fg: '#b18bb1', icon: '⊞', label: 'ZIP' },
-  img: { bg: '#0e1120', fg: '#ec9a78', icon: '◉', label: 'IMG' },
-  png: { bg: '#0e1120', fg: '#ec9a78', icon: '◉', label: 'PNG' },
-  jpg: { bg: '#0e1120', fg: '#ec9a78', icon: '◉', label: 'JPG' },
-  jpeg: { bg: '#0e1120', fg: '#ec9a78', icon: '◉', label: 'JPEG' },
-  gif: { bg: '#0e1120', fg: '#ec9a78', icon: '◉', label: 'GIF' },
-  default: { bg: '#0e1120', fg: '#E07555', icon: '◆', label: '' }
-}
+const FILE_TYPE_CONFIGS: Record<
+  string,
+  { bg: string; fg: string; icon: string; label: string }
+> = {
+  json: { bg: "#0e1120", fg: "#E07555", icon: "{}", label: "JSON" },
+  csv: { bg: "#0e1120", fg: "#5fb3b3", icon: "⚏", label: "CSV" },
+  xml: { bg: "#0e1120", fg: "#ec5f67", icon: "‹›", label: "XML" },
+  txt: { bg: "#0e1120", fg: "#B9B1A5", icon: "≡", label: "TXT" },
+  pdf: { bg: "#0e1120", fg: "#f97583", icon: "⎙", label: "PDF" },
+  html: { bg: "#0e1120", fg: "#f99157", icon: "‹/›", label: "HTML" },
+  md: { bg: "#0e1120", fg: "#6c9ef8", icon: "M↓", label: "MD" },
+  sql: { bg: "#0e1120", fg: "#8ec07c", icon: "⚑", label: "SQL" },
+  yaml: { bg: "#0e1120", fg: "#c792ea", icon: "⋮", label: "YAML" },
+  js: { bg: "#0e1120", fg: "#f7df1e", icon: "JS", label: "JS" },
+  ts: { bg: "#0e1120", fg: "#3178c6", icon: "TS", label: "TS" },
+  py: { bg: "#0e1120", fg: "#61afef", icon: "Py", label: "PY" },
+  zip: { bg: "#0e1120", fg: "#b18bb1", icon: "⊞", label: "ZIP" },
+  img: { bg: "#0e1120", fg: "#ec9a78", icon: "◉", label: "IMG" },
+  png: { bg: "#0e1120", fg: "#ec9a78", icon: "◉", label: "PNG" },
+  jpg: { bg: "#0e1120", fg: "#ec9a78", icon: "◉", label: "JPG" },
+  jpeg: { bg: "#0e1120", fg: "#ec9a78", icon: "◉", label: "JPEG" },
+  gif: { bg: "#0e1120", fg: "#ec9a78", icon: "◉", label: "GIF" },
+  default: { bg: "#0e1120", fg: "#E07555", icon: "◆", label: "" },
+};
 
 const FILE_ICONS: Record<string, string> = {
   json: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M7 8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V8z"/><path d="M12 12v4m4-4v4" stroke-width="2.5" stroke-linecap="round"/>`,
@@ -45,19 +50,22 @@ const FILE_ICONS: Record<string, string> = {
   jpeg: `<rect x="8" y="10" width="16" height="12" rx="2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="13" cy="14" r="1.5" fill="currentColor"/><path d="M24 18l-4-4-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
   gif: `<rect x="8" y="10" width="16" height="12" rx="2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="13" cy="14" r="1.5" fill="currentColor"/><path d="M24 18l-4-4-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
   default: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 3h11l5 5v17a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 8v12m4-6H12" stroke-width="2.5" stroke-linecap="round"/>`,
-}
+};
 
-export function generatePlaceholderSvgDataUrl(title?: string, format?: string): string {
-  const ext = format?.toLowerCase() || 'default'
-  const config = FILE_TYPE_CONFIGS[ext] || FILE_TYPE_CONFIGS.default
-  const icon = FILE_ICONS[ext] || FILE_ICONS.default
-  
+export function generatePlaceholderSvgDataUrl(
+  title?: string,
+  format?: string,
+): string {
+  const ext = format?.toLowerCase() || "default";
+  const config = FILE_TYPE_CONFIGS[ext] || FILE_TYPE_CONFIGS.default;
+  const icon = FILE_ICONS[ext] || FILE_ICONS.default;
+
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 32 32'>
   <g stroke='${config.fg}' fill='none' stroke-width='1.5'>
     ${icon}
   </g>
-</svg>`
-  const base64 = Buffer.from(svg).toString('base64')
-  return `data:image/svg+xml;base64,${base64}`
+</svg>`;
+  const base64 = Buffer.from(svg).toString("base64");
+  return `data:image/svg+xml;base64,${base64}`;
 }

@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { ArrowRight } from 'lucide-react'
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export function CtaBand() {
   return (
@@ -16,11 +16,13 @@ export function CtaBand() {
           Ready to join the AI economy?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-fog">
-          Whether you're building AI agents or monetizing content, Suimo provides the infrastructure you need.
+          Whether you're building AI agents or monetizing content, Suimo
+          provides the infrastructure you need.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button className="group h-12 gap-2 bg-blue-600 px-8 text-white hover:bg-blue-500">
-            Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:scale-110" />
+            Get Started{" "}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:scale-110" />
           </Button>
           <Button variant="ghost" className="h-12 border border-white/10 px-8">
             Read Docs
@@ -28,5 +30,5 @@ export function CtaBand() {
         </div>
       </div>
     </motion.section>
-  )
+  );
 }

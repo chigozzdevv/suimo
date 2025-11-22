@@ -1,14 +1,18 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
-import { Copy, Check, ArrowRight, Zap, Key, Play } from 'lucide-react'
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Copy, Check, ArrowRight, Zap, Key, Play } from "lucide-react";
 
 export function GetStartedPage() {
-  const mcpUrl = 'https://api.suimo.com/mcp'
-  const [copied, setCopied] = useState(false)
+  const mcpUrl = "https://api.suimo.com/mcp";
+  const [copied, setCopied] = useState(false);
   const onCopy = async () => {
-    try { await navigator.clipboard.writeText(mcpUrl); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {}
-  }
+    try {
+      await navigator.clipboard.writeText(mcpUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
 
   return (
     <div className="relative min-h-screen w-full bg-ink text-parchment">
@@ -28,7 +32,8 @@ export function GetStartedPage() {
             Get Started with Suimo
           </h1>
           <p className="mt-4 text-base text-fog md:text-lg">
-            Connect your AI agent to Suimo&apos;s MCP server in three simple steps
+            Connect your AI agent to Suimo&apos;s MCP server in three simple
+            steps
           </p>
         </motion.div>
 
@@ -45,22 +50,33 @@ export function GetStartedPage() {
                 <Zap className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-medium">Step 1: Copy MCP Endpoint</h3>
+                <h3 className="text-xl font-medium">
+                  Step 1: Copy MCP Endpoint
+                </h3>
                 <p className="mt-2 text-sm text-fog">
-                  Use this endpoint URL to connect your AI agent to Suimo&apos;s MCP server
+                  Use this endpoint URL to connect your AI agent to Suimo&apos;s
+                  MCP server
                 </p>
                 <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider text-fog/70">Endpoint URL</span>
+                    <span className="text-xs uppercase tracking-wider text-fog/70">
+                      Endpoint URL
+                    </span>
                     <button
                       onClick={onCopy}
                       className="flex items-center gap-1.5 rounded-md border border-white/15 px-3 py-1.5 text-xs font-medium text-parchment transition hover:bg-white/10"
                     >
-                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied ? 'Copied' : 'Copy'}
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {copied ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <div className="break-all font-mono text-sm text-sand">{mcpUrl}</div>
+                  <div className="break-all font-mono text-sm text-sand">
+                    {mcpUrl}
+                  </div>
                 </div>
               </div>
             </div>
@@ -78,13 +94,16 @@ export function GetStartedPage() {
                 <Key className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-medium">Step 2: Create an Account</h3>
+                <h3 className="text-xl font-medium">
+                  Step 2: Create an Account
+                </h3>
                 <p className="mt-2 text-sm text-fog">
-                  Sign up to access the dashboard and monitor your crawling activities, fund your payer wallet, and manage resources
+                  Sign up to access the dashboard and monitor your crawling
+                  activities, fund your payer wallet, and manage resources
                 </p>
                 <div className="mt-4">
                   <Button
-                    onClick={() => window.location.href = '/auth'}
+                    onClick={() => (window.location.href = "/auth")}
                     className="gap-2 bg-[#cfbea0] text-black hover:bg-[#cfbea0]"
                   >
                     Create Account <ArrowRight className="h-4 w-4" />
@@ -108,11 +127,13 @@ export function GetStartedPage() {
               <div className="flex-1">
                 <h3 className="text-xl font-medium">Step 3: Start Crawling</h3>
                 <p className="mt-2 text-sm text-fog">
-                  Configure your AI agent with the MCP endpoint and start making requests
+                  Configure your AI agent with the MCP endpoint and start making
+                  requests
                 </p>
                 <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-fog">
-                    Your agent can now access permissioned data with instant custodial settlement in USDC on SUI
+                    Your agent can now access permissioned data with instant
+                    custodial settlement in USDC on SUI
                   </p>
                 </div>
               </div>
@@ -123,7 +144,7 @@ export function GetStartedPage() {
         <div className="mt-12 text-center">
           <Button
             variant="ghost"
-            onClick={() => window.location.href = '/'}
+            onClick={() => (window.location.href = "/")}
             className="gap-2 border border-white/12 hover:bg-white/5"
           >
             Back to Home
@@ -131,5 +152,5 @@ export function GetStartedPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }

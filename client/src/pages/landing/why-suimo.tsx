@@ -1,23 +1,26 @@
-import { motion } from 'framer-motion'
-import { Shield, Zap, Link } from 'lucide-react'
+import { motion } from "framer-motion";
+import { Shield, Zap, Link } from "lucide-react";
 
 const solutions = [
   {
     icon: Shield,
-    title: 'Consent-first architecture',
-    description: 'Scoped tokens and per-request permissions ensure agents only access what they paid for',
+    title: "Consent-first architecture",
+    description:
+      "Scoped tokens and per-request permissions ensure agents only access what they paid for",
   },
   {
     icon: Zap,
-    title: 'Instant custodial settlement',
-    description: 'Custodial settlement in USDC on SUI with cryptographic receipts — pay and get proof instantly',
+    title: "Instant custodial settlement",
+    description:
+      "Custodial settlement in USDC on SUI with cryptographic receipts — pay and get proof instantly",
   },
   {
     icon: Link,
-    title: 'Standardized agent access',
-    description: 'MCP protocol eliminates API key sprawl and enables secure, permissioned discovery',
+    title: "Standardized agent access",
+    description:
+      "MCP protocol eliminates API key sprawl and enables secure, permissioned discovery",
   },
-]
+];
 
 export function WhySuimo() {
   return (
@@ -36,7 +39,7 @@ export function WhySuimo() {
 
       <div className="mt-12 grid gap-6 md:grid-cols-3">
         {solutions.map((solution, index) => {
-          const Icon = solution.icon
+          const Icon = solution.icon;
           return (
             <motion.div
               key={solution.title}
@@ -49,12 +52,16 @@ export function WhySuimo() {
               <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-sand/10 transition-all group-hover:bg-sand/20">
                 <Icon className="h-6 w-6 text-sand" />
               </div>
-              <h3 className="text-lg font-semibold text-parchment">{solution.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-fog">{solution.description}</p>
+              <h3 className="text-lg font-semibold text-parchment">
+                {solution.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-fog">
+                {solution.description}
+              </p>
             </motion.div>
-          )
+          );
         })}
       </div>
     </section>
-  )
+  );
 }

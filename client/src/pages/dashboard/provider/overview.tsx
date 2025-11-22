@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { api } from '@/services/api';
-import type { ProviderOverview } from '@/services/api';
-import { DollarSign, Search, TrendingUp, Star } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/services/api";
+import type { ProviderOverview } from "@/services/api";
+import { DollarSign, Search, TrendingUp, Star } from "lucide-react";
 
 export function OverviewPage() {
   const [overview, setOverview] = useState<ProviderOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadOverview();
@@ -20,7 +20,7 @@ export function OverviewPage() {
       const data = await api.getProviderOverview();
       setOverview(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load overview');
+      setError(err.message || "Failed to load overview");
     } finally {
       setIsLoading(false);
     }
@@ -35,13 +35,14 @@ export function OverviewPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
-  const verifiedCount = overview?.resources.filter((r) => r.verified).length ?? 0;
+  const verifiedCount =
+    overview?.resources.filter((r) => r.verified).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -80,10 +81,16 @@ export function OverviewPage() {
         />
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
         <Card>
           <CardContent className="p-6">
-            <h2 className="mb-4 text-xl font-medium text-parchment">Top resources</h2>
+            <h2 className="mb-4 text-xl font-medium text-parchment">
+              Top resources
+            </h2>
             {overview?.resources.length ? (
               <div className="space-y-3">
                 {overview.resources.map((resource) => (
@@ -92,7 +99,9 @@ export function OverviewPage() {
                     className="justify-betweenrounded-xl flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
                   >
                     <div>
-                      <p className="font-medium text-parchment">{resource.title}</p>
+                      <p className="font-medium text-parchment">
+                        {resource.title}
+                      </p>
                       <p className="text-xs text-fog">{resource.type}</p>
                     </div>
                     {resource.verified && (
@@ -102,23 +111,31 @@ export function OverviewPage() {
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-sm text-fog">No resources yet</div>
+              <div className="py-8 text-center text-sm text-fog">
+                No resources yet
+              </div>
             )}
           </CardContent>
         </Card>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
         <Card>
           <CardContent className="p-6">
-            <h2 className="mb-4 text-xl font-medium text-parchment">Highlights</h2>
+            <h2 className="mb-4 text-xl font-medium text-parchment">
+              Highlights
+            </h2>
             <div className="grid gap-4 md:grid-cols-3">
               <Highlight
                 label="Verified coverage"
                 value={
                   overview && overview.resources.length > 0
                     ? `${Math.round((verifiedCount / overview.resources.length) * 100)}%`
-                    : '0%'
+                    : "0%"
                 }
                 helper={`${verifiedCount} of ${overview?.resources.length || 0} resources`}
               />
@@ -127,13 +144,17 @@ export function OverviewPage() {
                 value={
                   overview
                     ? `${Math.round((overview.searchStats.totalSelected / Math.max(overview.searchStats.totalImpressions, 1)) * 100)}%`
-                    : '0%'
+                    : "0%"
                 }
                 helper="selected vs impressions"
               />
               <Highlight
                 label="Payout momentum"
-                value={formatCurrency((overview?.earnings.avgEarning || 0) * (overview?.earnings.totalRequests || 0) * 0.15)}
+                value={formatCurrency(
+                  (overview?.earnings.avgEarning || 0) *
+                    (overview?.earnings.totalRequests || 0) *
+                    0.15,
+                )}
                 helper="Projected weekly earnings"
               />
             </div>
@@ -160,11 +181,18 @@ function StatCard({
   delay: number;
 }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }} className="h-full">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="h-full"
+    >
       <Card className="h-full">
         <CardContent className="p-5 flex flex-col h-full">
           <div className="mb-3 flex items-start justify-between">
-            <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}>
+            <div
+              className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center ${color}`}
+            >
               <Icon className="h-5 w-5" />
             </div>
           </div>
@@ -177,7 +205,15 @@ function StatCard({
   );
 }
 
-function Highlight({ label, value, helper }: { label: string; value: string; helper: string }) {
+function Highlight({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <p className="text-sm text-fog">{label}</p>

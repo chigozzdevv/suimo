@@ -1,14 +1,14 @@
-import { X } from 'lucide-react'
+import { X } from "lucide-react";
 
 interface ModalProps {
-  open: boolean
-  title: string
-  onClose: () => void
-  children: React.ReactNode
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
 }
 
 export function Modal({ open, title, onClose, children }: ModalProps) {
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div
@@ -19,7 +19,9 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
     >
       <div className="relative w-full max-w-2xl my-8 rounded-2xl border border-white/10 bg-[#121a2a] shadow-2xl max-h-[calc(100vh-4rem)]">
         <div className="sticky top-0 z-10 bg-[#121a2a] rounded-t-2xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <h3 id="modal-title" className="text-xl font-semibold text-parchment">{title}</h3>
+          <h3 id="modal-title" className="text-xl font-semibold text-parchment">
+            {title}
+          </h3>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-fog transition-colors hover:bg-white/10 hover:text-parchment"
@@ -32,5 +34,5 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-import { z } from 'zod';
-import { createResourceInput as _createResourceInput } from '@/features/resources/resources.schema.js';
+import { z } from "zod";
+import { createResourceInput as _createResourceInput } from "@/features/resources/resources.schema.js";
 
 export const createResourceInput = _createResourceInput; // backward compatibility
 
 export const siteVerifyInput = z.object({
   domain: z.string(),
-  method: z.enum(['dns', 'file']),
+  method: z.enum(["dns", "file"]),
 });
 
 export const uploadDatasetInput = z.object({
@@ -16,6 +16,6 @@ export const uploadDatasetInput = z.object({
 
 export const siteVerifyCheckInput = z.object({
   domain: z.string(),
-  method: z.enum(['dns', 'file']),
+  method: z.enum(["dns", "file"]),
   token: z.string(),
 });

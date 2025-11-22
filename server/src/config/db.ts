@@ -1,5 +1,5 @@
-import { MongoClient, Db } from 'mongodb';
-import { loadEnv } from '@/config/env.js';
+import { MongoClient, Db } from "mongodb";
+import { loadEnv } from "@/config/env.js";
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -7,11 +7,11 @@ let db: Db | null = null;
 export async function getDb(): Promise<Db> {
   if (db) return db;
   const { MONGODB_URI } = loadEnv();
-  if (!MONGODB_URI) throw new Error('MONGODB_URI is required');
+  if (!MONGODB_URI) throw new Error("MONGODB_URI is required");
   client = new MongoClient(MONGODB_URI);
   await client.connect();
   const url = new URL(MONGODB_URI);
-  const dbName = (url.pathname && url.pathname.replace('/', '')) || 'suimo';
+  const dbName = (url.pathname && url.pathname.replace("/", "")) || "suimo";
   db = client.db(dbName);
   return db;
 }

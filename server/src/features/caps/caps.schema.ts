@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const setCapsInput = z.object({
   global_weekly_cap: z.number().positive().optional(),
