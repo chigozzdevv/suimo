@@ -1,11 +1,56 @@
-import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
+import { SessionKey, EncryptedObject } from "@mysten/seal";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { fromB64, fromHex } from "@mysten/sui/utils";
 import { randomBytes } from "crypto";
+import path from "node:path";
 import { loadEnv } from "@/config/env.js";
+const sealModulePath = new URL(import.meta.resolve("@mysten/seal")).pathname;
+const sealBase = path.resolve(path.dirname(sealModulePath), "..", "..");
+
+type SealInternals = {
+  sealEncryptCore: any;
+  sealDecryptCore: any;
+  DemType: any;
+  KemType: any;
+  AesGcm256: any;
+  fetchKeysForAllIds: any;
+  G1Element: any;
+};
+let sealInternalsPromise: Promise<SealInternals> | null = null;
+async function loadSealInternals(): Promise<SealInternals> {
+  if (!sealInternalsPromise) {
+    sealInternalsPromise = (async () => {
+      const encMod = await import(
+        `file://${path.join(sealBase, "dist/esm/encrypt.js")}`
+      );
+      const decMod = await import(
+        `file://${path.join(sealBase, "dist/esm/decrypt.js")}`
+      );
+      const demMod = await import(
+        `file://${path.join(sealBase, "dist/esm/dem.js")}`
+      );
+      const ksMod = await import(
+        `file://${path.join(sealBase, "dist/esm/key-server.js")}`
+      );
+      const blsMod = await import(
+        `file://${path.join(sealBase, "dist/esm/bls12381.js")}`
+      );
+      return {
+        sealEncryptCore: encMod.encrypt,
+        DemType: encMod.DemType,
+        KemType: encMod.KemType,
+        sealDecryptCore: decMod.decrypt,
+        AesGcm256: demMod.AesGcm256,
+        fetchKeysForAllIds: ksMod.fetchKeysForAllIds,
+        G1Element: blsMod.G1Element,
+      };
+    })();
+  }
+  return sealInternalsPromise;
+}
 
 function suiClient() {
   const env = loadEnv();
@@ -36,14 +81,33 @@ function getKeyServerIds(): string[] {
   return keyServerIds;
 }
 
-function createSealClient(keyServerIds: string[]): SealClient {
-  return new SealClient({
-    suiClient: suiClient() as any,
-    serverConfigs: keyServerIds.map((objectId) => ({
+type KeyServerInfo = {
+  objectId: string;
+  url: string;
+  pk: Uint8Array;
+  name: string;
+};
+
+async function fetchKeyServers(keyServerIds: string[]): Promise<KeyServerInfo[]> {
+  const client = suiClient();
+  const servers: KeyServerInfo[] = [];
+  for (const objectId of keyServerIds) {
+    const res: any = await client.getObject({
+      id: objectId,
+      options: { showContent: true },
+    } as any);
+    if (!res?.data?.content?.fields) {
+      throw new Error(`Key server ${objectId} not found or invalid`);
+    }
+    const fields = res.data.content.fields as any;
+    servers.push({
       objectId,
-      weight: 1,
-    })),
-  });
+      url: fields.url,
+      pk: new Uint8Array(fields.pk),
+      name: fields.name,
+    });
+  }
+  return servers;
 }
 
 export async function sealEncryptForPolicy(
@@ -57,14 +121,29 @@ export async function sealEncryptForPolicy(
   const policyPackageIdHex = env.SEAL_POLICY_PACKAGE;
   if (!policyPackageIdHex) throw new Error("SEAL_POLICY_PACKAGE missing");
 
+  const {
+    sealEncryptCore,
+    DemType,
+    KemType,
+    AesGcm256,
+  } = await loadSealInternals();
   const keyServerIds = getKeyServerIds();
-  const seal = createSealClient(keyServerIds);
+  const keyServers = await fetchKeyServers(keyServerIds);
   const id = `0x${randomBytes(32).toString("hex")}`;
-  const { encryptedObject } = await seal.encrypt({
-    threshold: Math.min(3, keyServerIds.length),
+  const { encryptedObject } = await sealEncryptCore({
+    kemType: KemType.BonehFranklinBLS12381DemCCA,
+    demType: DemType.AesGcm256,
+    threshold: Math.min(3, keyServers.length),
     packageId: policyPackageIdHex,
     id,
-    data: plaintext,
+    encryptionInput: new AesGcm256(plaintext, new Uint8Array()),
+    keyServers: keyServers.map((ks) => ({
+      objectId: ks.objectId,
+      pk: ks.pk,
+      url: ks.url,
+      keyType: 0,
+      name: ks.name,
+    })) as any,
   });
   return {
     ciphertextEnvelope: encryptedObject,
@@ -130,18 +209,35 @@ export async function sealDecryptForAccess(
     onlyTransactionKind: true,
   });
 
-  const keyServerIds = getKeyServerIds();
-  const seal = createSealClient(keyServerIds);
-  await seal.fetchKeys({
-    ids: [idHex],
-    txBytes,
-    sessionKey: session,
-    threshold: enc.threshold,
-  });
-  const pt = await seal.decrypt({
-    data: new Uint8Array(bytes),
-    sessionKey: session,
-    txBytes,
+  const {
+    sealDecryptCore,
+    fetchKeysForAllIds,
+    G1Element,
+  } = await loadSealInternals();
+  const keyServers = await fetchKeyServers(getKeyServerIds());
+  const keyMap: Map<string, any> = new Map();
+  const cert = await session.getCertificate();
+  const { encKey, encKeyPk, encVerificationKey, requestSignature } =
+    await session.createRequestParams(txBytes);
+  for (const server of keyServers) {
+    const allKeys = await fetchKeysForAllIds({
+      url: server.url,
+      requestSignature,
+      transactionBytes: txBytes,
+      encKey,
+      encKeyPk,
+      encVerificationKey,
+      certificate: cert,
+      timeout: 15000,
+    });
+    for (const { fullId, key } of allKeys) {
+      keyMap.set(`${fullId}:${server.objectId}`, G1Element.fromBytes(key));
+    }
+  }
+  const pt = await sealDecryptCore({
+    encryptedObject: enc,
+    keys: keyMap,
+    checkLEEncoding: false,
   });
 
   const CHUNK_SIZE = 256 * 1024;
