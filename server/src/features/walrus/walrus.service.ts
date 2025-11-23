@@ -40,11 +40,11 @@ function getClients(rpcOverride?: string) {
     network,
     ...(env.WALRUS_RELAY_URL
       ? {
-          uploadRelay: {
-            host: env.WALRUS_RELAY_URL,
-            sendTip: { max: 1_000_000 },
-          },
-        }
+        uploadRelay: {
+          host: env.WALRUS_RELAY_URL,
+          sendTip: { max: 1_000_000 },
+        },
+      }
       : {}),
     storageNodeClientOptions: {
       timeout: uploadTimeout,
@@ -140,6 +140,47 @@ async function uploadViaHttpPublisher(
   );
 }
 
+async function downloadViaHttpAggregator(blobId: string): Promise<Uint8Array> {
+  const aggregators = [
+    "https://aggregator.walrus-testnet.walrus.space",
+    "https://wal-aggregator-testnet.staketab.org",
+    "https://walrus-testnet-aggregator.chainbase.online",
+    "https://sui-walrus-testnet-aggregator.bwarelabs.com",
+    "https://aggregator.walrus.banansen.dev",
+  ];
+
+  console.log(`[Walrus HTTP] Attempting direct HTTP aggregator download for ${blobId}...`);
+  let lastError: any;
+
+  for (const aggregatorUrl of aggregators) {
+    try {
+      console.log(`[Walrus HTTP] Trying aggregator: ${aggregatorUrl}`);
+      const start = Date.now();
+      const response = await undiciFetch(`${aggregatorUrl}/v1/blobs/${blobId}`, {
+        method: "GET",
+        dispatcher: new Agent({
+          connectTimeout: 30000,
+          headersTimeout: 180000,
+          bodyTimeout: 0,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Aggregator returned ${response.status}`);
+      }
+
+      const buf = await response.arrayBuffer();
+      console.log(`[Walrus HTTP] ✓ Download succeeded in ${Date.now() - start}ms. Size: ${buf.byteLength}`);
+      return new Uint8Array(buf);
+    } catch (error: any) {
+      console.warn(`[Walrus HTTP] ✗ Aggregator ${aggregatorUrl} failed: ${error.message}`);
+      lastError = error;
+      continue;
+    }
+  }
+  throw new Error(`All HTTP aggregators failed. Last error: ${lastError?.message}`);
+}
+
 async function uploadBlob(
   signer: any,
   data: Uint8Array,
@@ -204,8 +245,7 @@ export async function providerSigner(
       const bytes = new Uint8Array(Buffer.from(hex, "hex"));
       return Ed25519Keypair.fromSecretKey(to32(bytes));
     }
-  } catch {}
-  // Fallback: treat as raw bytes; normalize to 32
+  } catch { }
   return Ed25519Keypair.fromSecretKey(to32(new Uint8Array(secret)));
 }
 
@@ -229,9 +269,24 @@ export async function putWalrusBlobAsProvider(
 }
 
 export async function getWalrusBlob(id: string): Promise<Uint8Array> {
+  console.log(`[Walrus] Reading blob ${id}...`);
+
+  try {
+    return await downloadViaHttpAggregator(id);
+  } catch (httpError) {
+    console.warn("[Walrus] HTTP aggregators failed, falling back to SDK:", httpError);
+  }
+
+  const start = Date.now();
   const { walrus } = getClients();
-  const buf = await walrus.readBlob({ blobId: id });
-  return new Uint8Array(buf);
+  try {
+    const buf = await walrus.readBlob({ blobId: id });
+    console.log(`[Walrus] SDK Read blob ${id} success in ${Date.now() - start}ms. Size: ${buf.length}`);
+    return new Uint8Array(buf);
+  } catch (e) {
+    console.error(`[Walrus] SDK Read blob ${id} failed after ${Date.now() - start}ms:`, e);
+    throw e;
+  }
 }
 
 export async function getWalrusBlobChunks(

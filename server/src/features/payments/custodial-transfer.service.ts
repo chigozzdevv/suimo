@@ -39,11 +39,6 @@ export async function transferWalFromUser(
     const suiClient = client();
     const owner = keypair.getPublicKey().toSuiAddress();
 
-    console.log(`[CustodialTransfer] Transferring from user: ${userId}`);
-    console.log(`[CustodialTransfer] Sender Address: ${owner}`);
-    console.log(`[CustodialTransfer] CoinType: ${coinType}`);
-    console.log(`[CustodialTransfer] Decimals: ${decimals}`);
-
     const coins = await suiClient.getCoins({ owner, coinType, limit: 200 });
     const total = coins.data.reduce((acc, x) => acc + BigInt(x.balance), 0n);
     const need = toAtomic(amountWal, decimals);
