@@ -265,7 +265,27 @@ export async function fetchService(
       walAmountRequired = walAmount;
 
       const { transferWalFromUser } = await import("@/features/payments/custodial-transfer.service.js");
-      const platformKey = await findWalletKey("platform", "payout");
+      let platformKey = await findWalletKey("platform", "payout");
+      // Fallback to env if DB record missing
+      if (!platformKey) {
+        const raw = process.env.SUI_PLATFORM_PRIVATE_KEY;
+        if (raw) {
+          try {
+            const { decodeSuiPrivateKey } = await import("@mysten/sui/cryptography");
+            const { Ed25519Keypair } = await import("@mysten/sui/keypairs/ed25519");
+            const { schema, secretKey } = decodeSuiPrivateKey(raw);
+            if (schema === 'ED25519') {
+              const kp = Ed25519Keypair.fromSecretKey(secretKey);
+              platformKey = {
+                public_key: kp.getPublicKey().toSuiAddress()
+              } as any;
+            }
+          } catch (e) {
+            console.warn("Failed to derive platform key from env:", e);
+          }
+        }
+      }
+
       if (!platformKey?.public_key) {
         return {
           status: 500 as const,
