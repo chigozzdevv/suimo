@@ -24,6 +24,7 @@ const EnvSchema = z.object({
   WALRUS_CONCURRENCY: z.string().optional(),
   WALRUS_MAX_RETRIES: z.string().optional(),
   SEAL_POLICY_PACKAGE: z.string().optional(),
+  SEAL_KEY_SERVER_IDS: z.string().optional(),
   SEAL_SERVICE_URL: z.string().optional(),
   PLATFORM_FEE_BPS: z.string().optional(),
   OAUTH_ISSUER: z.string().url().optional(),

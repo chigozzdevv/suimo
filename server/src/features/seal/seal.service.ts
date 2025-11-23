@@ -1,26 +1,49 @@
-import {
-  getAllowlistedKeyServers,
-  retrieveKeyServers,
-  KeyStore,
-  SessionKey,
-  encrypt as sealEncrypt,
-  AesGcm256,
-  EncryptedObject,
-} from "@mysten/seal";
+import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import {
-  toSerializedSignature,
-  decodeSuiPrivateKey,
-} from "@mysten/sui/cryptography";
-import { fromB64 } from "@mysten/sui/utils";
+import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
+import { fromB64, fromHex } from "@mysten/sui/utils";
+import { randomBytes } from "crypto";
 import { loadEnv } from "@/config/env.js";
 
 function suiClient() {
   const env = loadEnv();
   const rpc = env.SUI_RPC_URL || getFullnodeUrl("testnet");
   return new SuiClient({ url: rpc });
+}
+
+const DEFAULT_TESTNET_KEY_SERVERS = [
+  "0xb35a7228d8cf224ad1e828c0217c95a5153bafc2906d6f9c178197dce26fbcf8",
+  "0x2d6cde8a9d9a65bde3b0a346566945a63b4bfb70e9a06c41bdb70807e2502b06",
+];
+
+function getKeyServerIds(): string[] {
+  const env = loadEnv();
+  const network = env.WALRUS_NETWORK === "mainnet" ? "mainnet" : "testnet";
+  const configuredIds = env.SEAL_KEY_SERVER_IDS
+    ? env.SEAL_KEY_SERVER_IDS.split(",").map((id) => id.trim()).filter(Boolean)
+    : null;
+  const keyServerIds =
+    configuredIds ?? (network === "testnet" ? DEFAULT_TESTNET_KEY_SERVERS : []);
+
+  if (!keyServerIds.length) {
+    throw new Error(
+      "Seal key server IDs are not configured for the current network",
+    );
+  }
+
+  return keyServerIds;
+}
+
+function createSealClient(keyServerIds: string[]): SealClient {
+  return new SealClient({
+    suiClient: suiClient() as any,
+    serverConfigs: keyServerIds.map((objectId) => ({
+      objectId,
+      weight: 1,
+    })),
+  });
 }
 
 export async function sealEncryptForPolicy(
@@ -31,27 +54,17 @@ export async function sealEncryptForPolicy(
   meta: { algo: string; size_bytes: number };
 }> {
   const env = loadEnv();
-  const network = (env.WALRUS_NETWORK === "mainnet" ? "mainnet" : "testnet") as
-    | "mainnet"
-    | "testnet";
-  const keyServerIds = getAllowlistedKeyServers(network);
-  const keyServers = await retrieveKeyServers({
-    objectIds: keyServerIds,
-    client: suiClient() as any,
-  });
-  const encryptionInput = new AesGcm256(plaintext, new Uint8Array());
   const policyPackageIdHex = env.SEAL_POLICY_PACKAGE;
   if (!policyPackageIdHex) throw new Error("SEAL_POLICY_PACKAGE missing");
-  const packageId = Uint8Array.from(
-    Buffer.from(policyPackageIdHex.replace(/^0x/, ""), "hex"),
-  );
-  const id = new Uint8Array(32);
-  const { encryptedObject } = await sealEncrypt({
-    keyServers,
-    threshold: Math.min(3, keyServers.length),
-    packageId,
+
+  const keyServerIds = getKeyServerIds();
+  const seal = createSealClient(keyServerIds);
+  const id = `0x${randomBytes(32).toString("hex")}`;
+  const { encryptedObject } = await seal.encrypt({
+    threshold: Math.min(3, keyServerIds.length),
+    packageId: policyPackageIdHex,
     id,
-    encryptionInput,
+    data: plaintext,
   });
   return {
     ciphertextEnvelope: encryptedObject,
@@ -65,26 +78,22 @@ export async function sealDecryptForAccess(
   _ctx?: { requestId?: string },
 ): Promise<{ chunks: string[]; bytes: number }> {
   const env = loadEnv();
-  const network = (env.WALRUS_NETWORK === "mainnet" ? "mainnet" : "testnet") as
-    | "mainnet"
-    | "testnet";
-  const keyServerIds = getAllowlistedKeyServers(network);
-  const keyServers = await retrieveKeyServers({
-    objectIds: keyServerIds,
-    client: suiClient() as any,
-  });
-  const ks = new KeyStore();
 
   const bytes = Buffer.concat(
     cipher.chunks.map((b64) => Buffer.from(b64, "base64")),
   );
-  const enc = EncryptedObject.parse(new Uint8Array(bytes));
-  const packageId = enc.package_id;
-  const id = new Uint8Array(enc.id);
+  let enc: ReturnType<typeof EncryptedObject.parse>;
+  try {
+    enc = EncryptedObject.parse(new Uint8Array(bytes));
+  } catch (err) {
+    throw new Error(
+      `SEAL_CIPHERTEXT_UNSUPPORTED: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  const packageId = enc.packageId;
+  const idHex = enc.id;
 
   const ttlMin = 10;
-  const session = new SessionKey(packageId, ttlMin);
-  const msg = session.getPersonalMessage();
   const raw =
     process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
   if (!raw) throw new Error("SUI_PLATFORM_PRIVATE_KEY missing");
@@ -99,35 +108,41 @@ export async function sealDecryptForAccess(
       : fromB64(cleaned);
     kp = Ed25519Keypair.fromSecretKey(buf);
   }
-  const sigBytes = await kp.sign(msg);
-  const sig = toSerializedSignature({
-    signatureScheme: "ED25519",
-    signature: new Uint8Array(sigBytes),
-    publicKey: kp.getPublicKey(),
+
+  const session = await SessionKey.create({
+    address: kp.getPublicKey().toSuiAddress(),
+    packageId,
+    ttlMin,
+    signer: kp,
+    suiClient: suiClient() as any,
   });
-  session.setPersonalMessageSignature(sig);
 
   const tx = new Transaction();
   const sender = kp.getPublicKey().toSuiAddress();
   tx.setSender(sender);
-
-  const pkgHex = Buffer.from(packageId).toString("hex");
   tx.moveCall({
-    target: `0x${pkgHex}::policy::seal_approve`,
-    arguments: [tx.pure.vector("u8", id)],
+    target: `${packageId}::policy::seal_approve`,
+    arguments: [tx.pure.vector("u8", fromHex(idHex))],
   });
 
-  const txBytes = await tx.build({ onlyTransactionKind: true });
+  const txBytes = await tx.build({
+    client: suiClient() as any,
+    onlyTransactionKind: true,
+  });
 
-  await ks.fetchKeys({
-    keyServers,
-    threshold: Math.min(3, keyServers.length),
-    packageId,
-    ids: [id],
+  const keyServerIds = getKeyServerIds();
+  const seal = createSealClient(keyServerIds);
+  await seal.fetchKeys({
+    ids: [idHex],
     txBytes,
     sessionKey: session,
+    threshold: enc.threshold,
   });
-  const pt = await ks.decrypt(enc);
+  const pt = await seal.decrypt({
+    data: new Uint8Array(bytes),
+    sessionKey: session,
+    txBytes,
+  });
 
   const CHUNK_SIZE = 256 * 1024;
   const out: string[] = [];
