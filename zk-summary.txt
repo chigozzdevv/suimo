@@ -1,7 +1,0 @@
-ZK overview:
-- Zero-knowledge proofs let a prover convince a verifier of a statement’s truth without revealing underlying data. They provide privacy (hide the witness), integrity (soundness), and succinctness (small proofs).
-- Common flavors: zk-SNARKs (succinct, need a setup), zk-STARKs (transparent, post-quantum assumptions, larger proofs), Bulletproofs (no trusted setup, logarithmic size), and recursive proofs (compose proofs for scalability).
-- Typical flow: encode the claim as a circuit/arithmetization, generate a proving key and verifying key (or transparent parameters), prover creates a proof using the witness, verifier checks the proof against the public inputs.
-- Key trade-offs: proving time vs. verification time, proof size, trust model (trusted setup vs. transparent), and security assumptions (pairings vs. hashes).
-- Use cases relevant to apps like ours: private data attestations, on-chain verification without leaking raw content, authenticated fetch receipts, and batching via recursion.
-- For our stack: keep proofs off-chain in Walrus, store commitment IDs on-chain if needed, and use Seal for encrypting private payloads alongside ZK commitments to keep data hidden while still verifiable.

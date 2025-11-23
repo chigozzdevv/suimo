@@ -120,6 +120,16 @@ export async function uploadDatasetController(
   const userId = (req as any).userId as string;
   const body = uploadDatasetInput.parse(req.body);
   const bytes = Buffer.from(body.encrypted_object_b64, "base64");
+  // Validate the ciphertext is a parsable Seal envelope before storing.
+  try {
+    const { EncryptedObject } = await import("@mysten/seal");
+    EncryptedObject.parse(new Uint8Array(bytes));
+  } catch (err: any) {
+    return reply.code(400).send({
+      error: "SEAL_CIPHERTEXT_INVALID",
+      detail: String(err?.message || err),
+    });
+  }
   try {
     const res = await putWalrusBlobAsProvider(userId, new Uint8Array(bytes), {
       deletable: body.deletable ?? true,
