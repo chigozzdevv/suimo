@@ -17,6 +17,7 @@ import {
   removeProviderDomain,
 } from "@/features/providers/providers.service.js";
 import { putWalrusBlobAsProvider } from "@/features/walrus/walrus.service.js";
+import { sealEncryptForPolicy } from "@/features/seal/seal.service.js";
 
 export async function createOrGetProviderController(
   req: FastifyRequest,
@@ -119,26 +120,36 @@ export async function uploadDatasetController(
 ) {
   const userId = (req as any).userId as string;
   const body = uploadDatasetInput.parse(req.body);
-  const bytes = Buffer.from(body.encrypted_object_b64, "base64");
-  // Validate the ciphertext is a parsable Seal envelope before storing.
+  const decoded = Buffer.from(body.encrypted_object_b64, "base64");
+  let bytesToStore: Uint8Array = new Uint8Array(decoded);
+  let sizeBytes = decoded.byteLength;
+
+  // Validate the ciphertext is a parsable Seal envelope before storing; if invalid, encrypt it here.
   try {
     const { EncryptedObject } = await import("@mysten/seal");
-    EncryptedObject.parse(new Uint8Array(bytes));
+    EncryptedObject.parse(new Uint8Array(decoded));
   } catch (err: any) {
-    return reply.code(400).send({
-      error: "SEAL_CIPHERTEXT_INVALID",
-      detail: String(err?.message || err),
-    });
+    try {
+      const plain = new Uint8Array(decoded) as unknown as Uint8Array<ArrayBuffer>;
+      const { ciphertextEnvelope, meta } = await sealEncryptForPolicy(plain, "");
+      bytesToStore = ciphertextEnvelope;
+      sizeBytes = meta.size_bytes;
+    } catch (encErr: any) {
+      return reply.code(400).send({
+        error: "SEAL_CIPHERTEXT_INVALID",
+        detail: String(err?.message || err),
+      });
+    }
   }
   try {
-    const res = await putWalrusBlobAsProvider(userId, new Uint8Array(bytes), {
+    const res = await putWalrusBlobAsProvider(userId, bytesToStore, {
       deletable: body.deletable ?? true,
       epochs: body.epochs ?? 1,
     });
     return reply.send({
       walrus_blob_id: res.id,
       walrus_blob_object_id: res.objectId,
-      size_bytes: res.size,
+      size_bytes: sizeBytes,
     });
   } catch (e: any) {
     const msg = String(e?.message || "UPLOAD_FAILED");
