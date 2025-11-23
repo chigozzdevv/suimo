@@ -6,12 +6,88 @@ interface PriceCache {
     lastUpdated: number;
 }
 
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes - reduced API calls to avoid rate limiting
+const CACHE_TTL = 30 * 60 * 1000;
+
 let cache: PriceCache = {
     sui_usd: null,
     wal_usd: null,
     lastUpdated: 0,
 };
+
+async function fetchFromBinance(): Promise<{
+    sui_usd: number | null;
+    wal_usd: number | null;
+}> {
+    try {
+        const [suiResponse, walResponse] = await Promise.all([
+            fetch("https://api.binance.com/api/v3/ticker/price?symbol=SUIUSDT",
+                { signal: AbortSignal.timeout(5000) }),
+            fetch("https://api.binance.com/api/v3/ticker/price?symbol=WALUSDT",
+                { signal: AbortSignal.timeout(5000) })
+        ]);
+
+        let sui_usd: number | null = null;
+        let wal_usd: number | null = null;
+
+        if (suiResponse.ok) {
+            const suiData = await suiResponse.json();
+            sui_usd = suiData?.price ? parseFloat(suiData.price) : null;
+        } else {
+            console.warn(`[PriceService] Binance SUI error: ${suiResponse.status}`);
+        }
+
+        if (walResponse.ok) {
+            const walData = await walResponse.json();
+            wal_usd = walData?.price ? parseFloat(walData.price) : null;
+        } else {
+            console.warn(`[PriceService] Binance WAL error: ${walResponse.status}`);
+        }
+
+        if (sui_usd || wal_usd) {
+            console.log(`[PriceService] Binance: SUI=$${sui_usd}, WAL=$${wal_usd}`);
+        }
+
+        return { sui_usd, wal_usd };
+    } catch (error) {
+        console.warn("[PriceService] Binance failed:", error);
+        return { sui_usd: null, wal_usd: null };
+    }
+}
+
+async function fetchFromCoinGecko(): Promise<{
+    sui_usd: number | null;
+    wal_usd: number | null;
+}> {
+    try {
+        const response = await fetch(
+            "https://api.coingecko.com/api/v3/simple/price?ids=sui,walrus-2&vs_currencies=usd",
+            { signal: AbortSignal.timeout(5000) }
+        );
+
+        if (response.status === 429) {
+            console.warn("[PriceService] CoinGecko rate limited");
+            return { sui_usd: null, wal_usd: null };
+        }
+
+        if (!response.ok) {
+            console.warn(`[PriceService] CoinGecko error: ${response.status}`);
+            return { sui_usd: null, wal_usd: null };
+        }
+
+        const data = await response.json();
+        const sui_usd = data.sui?.usd ?? null;
+        const wal_usd = data["walrus-2"]?.usd ?? null;
+
+        if (sui_usd || wal_usd) {
+            console.log(`[PriceService] CoinGecko: SUI=$${sui_usd}, WAL=$${wal_usd}`);
+        }
+
+        return { sui_usd, wal_usd };
+    } catch (error) {
+        console.warn("[PriceService] CoinGecko failed:", error);
+        return { sui_usd: null, wal_usd: null };
+    }
+}
 
 export async function fetchTokenPrices(): Promise<{
     sui_usd: number | null;
@@ -23,56 +99,29 @@ export async function fetchTokenPrices(): Promise<{
         return { sui_usd: cache.sui_usd, wal_usd: cache.wal_usd };
     }
 
-    const maxRetries = 2;
-    let lastError: any = null;
+    let sui_usd: number | null = null;
+    let wal_usd: number | null = null;
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            const response = await fetch(
-                "https://api.coingecko.com/api/v3/simple/price?ids=sui,walrus-2&vs_currencies=usd",
-                { signal: AbortSignal.timeout(5000) }
-            );
+    const binanceResult = await fetchFromBinance();
+    if (binanceResult.sui_usd) sui_usd = binanceResult.sui_usd;
+    if (binanceResult.wal_usd) wal_usd = binanceResult.wal_usd;
 
-            if (response.status === 429) {
-                // Rate limited - wait before retry
-                if (attempt < maxRetries) {
-                    const delay = Math.pow(2, attempt) * 1000; // 1s, 2s exponential backoff
-                    console.warn(`[PriceService] Rate limited (429), retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    continue;
-                }
-                console.warn(`[PriceService] Rate limited after ${maxRetries} retries, using cache`);
-                return { sui_usd: cache.sui_usd, wal_usd: cache.wal_usd };
-            }
-
-            if (!response.ok) {
-                console.warn(`[PriceService] CoinGecko API error: ${response.status}`);
-                return { sui_usd: cache.sui_usd, wal_usd: cache.wal_usd };
-            }
-
-            const data = await response.json();
-
-            cache = {
-                sui_usd: data.sui?.usd ?? null,
-                wal_usd: data["walrus-2"]?.usd ?? null,
-                lastUpdated: now,
-            };
-
-            console.log(`[PriceService] Prices updated: SUI=$${cache.sui_usd}, WAL=$${cache.wal_usd}`);
-
-            return { sui_usd: cache.sui_usd, wal_usd: cache.wal_usd };
-        } catch (error) {
-            lastError = error;
-            if (attempt < maxRetries) {
-                const delay = Math.pow(2, attempt) * 1000;
-                console.warn(`[PriceService] Error on attempt ${attempt + 1}, retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-                continue;
-            }
-        }
+    if (!sui_usd || !wal_usd) {
+        const coinGeckoResult = await fetchFromCoinGecko();
+        if (!sui_usd && coinGeckoResult.sui_usd) sui_usd = coinGeckoResult.sui_usd;
+        if (!wal_usd && coinGeckoResult.wal_usd) wal_usd = coinGeckoResult.wal_usd;
     }
 
-    console.error("[PriceService] Error fetching prices after retries:", lastError);
+    if (sui_usd !== null || wal_usd !== null) {
+        cache = {
+            sui_usd: sui_usd ?? cache.sui_usd,
+            wal_usd: wal_usd ?? cache.wal_usd,
+            lastUpdated: now,
+        };
+        console.log(`[PriceService] Updated: SUI=$${cache.sui_usd}, WAL=$${cache.wal_usd}`);
+    } else {
+        console.error("[PriceService] All sources failed, using stale cache");
+    }
+
     return { sui_usd: cache.sui_usd, wal_usd: cache.wal_usd };
 }
-
