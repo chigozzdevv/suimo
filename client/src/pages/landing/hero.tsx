@@ -62,8 +62,17 @@ export function Hero() {
           title="Watch demo"
           onClose={() => setDemoOpen(false)}
         >
-          <div className="relative w-full flex items-center justify-center py-20">
-            <p className="text-fog">Video coming soon...</p>
+          <div className="relative w-full flex items-center justify-center overflow-hidden rounded-xl bg-black">
+            <iframe
+              width="100%"
+              height="360"
+              src="https://www.youtube.com/embed/vqFlRzuLa20"
+              title="Suimo Demo | Walrus Haulout Hackerthon"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              style={{ aspectRatio: "16 / 9" }}
+            />
           </div>
         </Modal>
       </div>
