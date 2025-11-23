@@ -79,11 +79,7 @@ export const receiptSchema = z.object({
 });
 
 const fetchResultSchema = z.object({
-  content: z.union([
-    z.string(),
-    z.object({ url: z.string().url() }),
-    z.object({ chunks: z.array(z.string()) }),
-  ]),
+  content: z.union([z.string(), z.object({ url: z.string().url() })]),
   receipt: receiptSchema,
 });
 export const fetchResult = fetchResultSchema;
