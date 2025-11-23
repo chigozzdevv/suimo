@@ -320,17 +320,12 @@ export async function fetchService(
     let walrusCipher: { chunks: string[]; bytes: number } | null = null;
 
     const CHUNK_SIZE = 256 * 1024;
-    const splitToBase64 = (buf: Uint8Array): string[] => {
-      const out: string[] = [];
-      for (let i = 0; i < buf.length; i += CHUNK_SIZE) {
-        out.push(Buffer.from(buf.slice(i, i + CHUNK_SIZE)).toString("base64"));
-      }
-      return out;
-    };
+    const toBase64 = (buf: Uint8Array) =>
+      Buffer.from(buf).toString("base64");
 
-    const fetchAsChunks = async (
+    const fetchAsBase64 = async (
       url: string,
-    ): Promise<{ chunks: string[]; bytes: number }> => {
+    ): Promise<{ base64: string; bytes: number }> => {
       const response = await fetch(url);
       if (!response.ok)
         throw new Error(
@@ -341,32 +336,21 @@ export async function fetchService(
       if (!stream) {
         const ab = await response.arrayBuffer();
         const u8 = new Uint8Array(ab);
-        return { chunks: splitToBase64(u8), bytes: u8.byteLength };
+        return { base64: toBase64(u8), bytes: u8.byteLength };
       }
       const reader = (stream as ReadableStream<Uint8Array>).getReader();
-      let carry = new Uint8Array(0);
-      const out: string[] = [];
+      const buffers: Buffer[] = [];
       let total = 0;
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         if (value && value.length) {
           total += value.length;
-          const merged = new Uint8Array(carry.length + value.length);
-          merged.set(carry, 0);
-          merged.set(value, carry.length);
-          let offset = 0;
-          while (merged.length - offset >= CHUNK_SIZE) {
-            const part = merged.slice(offset, offset + CHUNK_SIZE);
-            out.push(Buffer.from(part).toString("base64"));
-            offset += CHUNK_SIZE;
-          }
-          carry = merged.slice(offset);
+          buffers.push(Buffer.from(value));
         }
       }
-      if (carry.length) out.push(Buffer.from(carry).toString("base64"));
-      return { chunks: out, bytes: total };
+      const merged = Buffer.concat(buffers);
+      return { base64: merged.toString("base64"), bytes: total };
     };
 
     // If summary mode is effective and summary exists, return it directly from Mongo (no external fetch)
@@ -377,9 +361,9 @@ export async function fetchService(
     ) {
       const buf = Buffer.from(String(resource.summary), "utf8");
       bytesBilled = buf.byteLength;
-      content = { chunks: splitToBase64(buf) };
+      content = { base64: toBase64(buf) };
     }
-    // Retrieve raw content either via connector or internal storage; always return chunks
+    // Retrieve raw content either via connector or internal storage; always return single base64
     else if (resource.connector_id) {
       const connector = await findConnectorById(resource.connector_id);
       if (!connector) throw new Error("CONNECTOR_NOT_FOUND");
@@ -402,7 +386,7 @@ export async function fetchService(
         }
       } else {
         bytesBilled = fetched.bytes;
-        content = { chunks: splitToBase64(fetched.body) };
+        content = { base64: toBase64(fetched.body) };
       }
     } else if (resource.walrus_blob_id || resource.walrus_quilt_id) {
       const walrusId = resource.walrus_blob_id || resource.walrus_quilt_id!;
@@ -438,7 +422,7 @@ export async function fetchService(
         resource.seal_policy_id,
         { requestId },
       );
-      content = { chunks: plaintext.chunks };
+      content = { base64: plaintext.base64, bytes: plaintext.bytes };
     }
 
     const receiptPayload = {

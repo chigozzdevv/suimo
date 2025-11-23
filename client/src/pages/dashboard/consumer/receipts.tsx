@@ -60,7 +60,7 @@ export function ReceiptsPage() {
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-xs text-fog/70">Provider Tx:</span>
                     <a
-                      href={`https://suiexplorer.com/txblock/${receipt.json.provider_onchain_tx}?network=testnet`}
+                      href={`https://suiscan.xyz/testnet/tx/${receipt.json.provider_onchain_tx}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-xs text-sand hover:text-parchment transition-colors"

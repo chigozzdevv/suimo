@@ -71,8 +71,6 @@ export async function getEarningsController(
   return reply.send({ earnings });
 }
 
-// Resource creation controller moved to resources.controller
-
 export async function siteVerifyInitController(
   req: FastifyRequest,
   reply: FastifyReply,

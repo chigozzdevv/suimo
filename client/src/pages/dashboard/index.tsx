@@ -474,16 +474,25 @@ export function Dashboard() {
               <User className="h-5 w-5" />
             </button>
             {profileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#121a2a] p-2 text-sm text-parchment">
-                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-white/5">
-                  View profile
-                </button>
-                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-white/5">
+              <div
+                className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#121a2a] p-2 text-sm text-parchment"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-white/5"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setActiveSection("settings");
+                  }}
+                >
                   Settings
                 </button>
                 <button
                   className="w-full rounded-lg px-3 py-2 text-left text-ember hover:bg-white/5"
-                  onClick={logout}
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    logout();
+                  }}
                 >
                   Logout
                 </button>

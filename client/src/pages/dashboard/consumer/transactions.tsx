@@ -253,7 +253,7 @@ export function TransactionsPage() {
                       </div>
                       {receipt.json?.provider_onchain_tx ? (
                         <a
-                          href={`https://suiexplorer.com/txblock/${receipt.json.provider_onchain_tx}?network=testnet`}
+                          href={`https://suiscan.xyz/testnet/tx/${receipt.json.provider_onchain_tx}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-end gap-1 text-xs text-parchment hover:text-parchment transition-colors mt-1"

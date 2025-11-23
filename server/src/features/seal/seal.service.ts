@@ -160,7 +160,7 @@ export async function sealDecryptForAccess(
   cipher: { chunks: string[] },
   _policyId?: string,
   _ctx?: { requestId?: string },
-): Promise<{ chunks: string[]; bytes: number }> {
+): Promise<{ chunks: string[]; bytes: number; base64: string }> {
   const env = loadEnv();
 
   const bytes = Buffer.concat(
@@ -250,5 +250,6 @@ export async function sealDecryptForAccess(
   for (let i = 0; i < pt.length; i += CHUNK_SIZE) {
     out.push(Buffer.from(pt.slice(i, i + CHUNK_SIZE)).toString("base64"));
   }
-  return { chunks: out, bytes: pt.length };
+  const base64 = Buffer.from(pt).toString("base64");
+  return { chunks: out, bytes: pt.length, base64 };
 }
