@@ -304,14 +304,12 @@ export async function fetchService(
           status: 503 as const,
           error: "PRICE_SERVICE_UNAVAILABLE",
         };
-      if (String(e.message).includes("INSUFFICIENT_WAL_BALANCE")) {
-        console.warn(`[PriceService] Insufficient WAL balance for user ${activeAgent.user_id}. Required: ${walAmountRequired} WAL`);
+      if (String(e.message).includes("INSUFFICIENT_WAL_BALANCE"))
         return {
           status: 402 as const,
           error: "INSUFFICIENT_WAL_BALANCE",
           quote: estCost,
         };
-      }
       throw e;
     }
   }

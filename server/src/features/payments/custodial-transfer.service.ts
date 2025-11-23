@@ -3,6 +3,7 @@ import { findWalletKey } from "@/features/wallets/keys.model.js";
 import { decryptSecret } from "@/services/crypto/keystore.js";
 import { client, resolveWalCoinType, resolveWalDecimals } from "@/services/sui/sui.service.js";
 import { Transaction } from "@mysten/sui/transactions";
+import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 
 function toAtomic(amountUi: string | number, decimals: number): bigint {
     const s = String(amountUi);
@@ -23,7 +24,15 @@ export async function transferWalFromUser(
     }
 
     const secretKeyBytes = decryptSecret(walletKey.enc);
-    const keypair = Ed25519Keypair.fromSecretKey(secretKeyBytes.slice(0, 32));
+    let keypair: Ed25519Keypair;
+    const secretStr = secretKeyBytes.toString('utf8');
+
+    if (secretStr.startsWith('suiprivkey')) {
+        const { secretKey } = decodeSuiPrivateKey(secretStr);
+        keypair = Ed25519Keypair.fromSecretKey(secretKey);
+    } else {
+        keypair = Ed25519Keypair.fromSecretKey(secretKeyBytes.slice(0, 32));
+    }
 
     const coinType = resolveWalCoinType();
     const decimals = resolveWalDecimals();
@@ -39,12 +48,7 @@ export async function transferWalFromUser(
     const total = coins.data.reduce((acc, x) => acc + BigInt(x.balance), 0n);
     const need = toAtomic(amountWal, decimals);
 
-    console.log(`[CustodialTransfer] Total Balance (Atomic): ${total}`);
-    console.log(`[CustodialTransfer] Need (Atomic): ${need}`);
-    console.log(`[CustodialTransfer] Coins found: ${coins.data.length}`);
-
     if (total < need) {
-        console.error(`[CustodialTransfer] INSUFFICIENT_WAL_BALANCE. Total: ${total}, Need: ${need}`);
         throw new Error("INSUFFICIENT_WAL_BALANCE");
     }
 
