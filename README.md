@@ -89,7 +89,8 @@ Minimum:
 OAuth / receipts (Ed25519 JWT):
 
 - `ED25519_PRIVATE_KEY_PATH=/path/to/private-key.pem` (PKCS#8 seed for signing)
-- Optional: `OAUTH_ISSUER` (default `https://suimo.local`), `OAUTH_RESOURCE` (defaults to `<base>/mcp`)
+- `OAUTH_ISSUER=https://your-domain.com` (for production, set to your actual domain; defaults to `https://suimo.local`)
+- `OAUTH_RESOURCE=https://your-domain.com/mcp` (for production, set to your actual domain; defaults to `<base>/mcp`)
 
 Sui + payout:
 
