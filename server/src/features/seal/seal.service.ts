@@ -2,7 +2,10 @@ import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
+import {
+  decodeSuiPrivateKey,
+  toSerializedSignature,
+} from "@mysten/sui/cryptography";
 import { fromB64, fromHex } from "@mysten/sui/utils";
 import { randomBytes } from "crypto";
 import { loadEnv } from "@/config/env.js";
@@ -82,67 +85,147 @@ export async function sealDecryptForAccess(
   const bytes = Buffer.concat(
     cipher.chunks.map((b64) => Buffer.from(b64, "base64")),
   );
-  let enc: ReturnType<typeof EncryptedObject.parse>;
+  const tryNewDecrypt = async () => {
+    const enc = EncryptedObject.parse(new Uint8Array(bytes));
+    const packageId = enc.packageId;
+    const idHex = enc.id;
+
+    const ttlMin = 10;
+    const raw =
+      process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
+    if (!raw) throw new Error("SUI_PLATFORM_PRIVATE_KEY missing");
+    let kp: Ed25519Keypair;
+    if (raw.startsWith("suiprivkey")) {
+      const { secretKey } = decodeSuiPrivateKey(raw);
+      kp = Ed25519Keypair.fromSecretKey(secretKey);
+    } else {
+      const cleaned = raw.includes(":") ? raw.split(":").pop()! : raw;
+      const buf = cleaned.startsWith("0x")
+        ? new Uint8Array(Buffer.from(cleaned.slice(2), "hex"))
+        : fromB64(cleaned);
+      kp = Ed25519Keypair.fromSecretKey(buf);
+    }
+
+    const session = await SessionKey.create({
+      address: kp.getPublicKey().toSuiAddress(),
+      packageId,
+      ttlMin,
+      signer: kp,
+      suiClient: suiClient() as any,
+    });
+
+    const tx = new Transaction();
+    const sender = kp.getPublicKey().toSuiAddress();
+    tx.setSender(sender);
+    tx.moveCall({
+      target: `${packageId}::policy::seal_approve`,
+      arguments: [tx.pure.vector("u8", fromHex(idHex))],
+    });
+
+    const txBytes = await tx.build({
+      client: suiClient() as any,
+      onlyTransactionKind: true,
+    });
+
+    const keyServerIds = getKeyServerIds();
+    const seal = createSealClient(keyServerIds);
+    await seal.fetchKeys({
+      ids: [idHex],
+      txBytes,
+      sessionKey: session,
+      threshold: enc.threshold,
+    });
+    return await seal.decrypt({
+      data: new Uint8Array(bytes),
+      sessionKey: session,
+      txBytes,
+    });
+  };
+
+  const tryLegacyDecrypt = async () => {
+    const legacy = await import("@mysten/seal-legacy");
+    const {
+      getAllowlistedKeyServers,
+      retrieveKeyServers,
+      KeyStore,
+      SessionKey: LegacySessionKey,
+      EncryptedObject: LegacyEncryptedObject,
+    } = legacy as any;
+    const legacyEnc = LegacyEncryptedObject.parse(new Uint8Array(bytes));
+    const packageId = legacyEnc.package_id;
+    const id = new Uint8Array(legacyEnc.id);
+
+    const raw =
+      process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
+    if (!raw) throw new Error("SUI_PLATFORM_PRIVATE_KEY missing");
+    let kp: Ed25519Keypair;
+    if (raw.startsWith("suiprivkey")) {
+      const { secretKey } = decodeSuiPrivateKey(raw);
+      kp = Ed25519Keypair.fromSecretKey(secretKey);
+    } else {
+      const cleaned = raw.includes(":") ? raw.split(":").pop()! : raw;
+      const buf = cleaned.startsWith("0x")
+        ? new Uint8Array(Buffer.from(cleaned.slice(2), "hex"))
+        : fromB64(cleaned);
+      kp = Ed25519Keypair.fromSecretKey(buf);
+    }
+
+    const ttlMin = 10;
+    const session = new LegacySessionKey(packageId, ttlMin);
+    const msg = session.getPersonalMessage();
+    const sigBytes = await kp.sign(msg);
+    const sig = toSerializedSignature({
+      signatureScheme: "ED25519",
+      signature: new Uint8Array(sigBytes),
+      publicKey: kp.getPublicKey(),
+    });
+    session.setPersonalMessageSignature(sig);
+
+    const tx = new Transaction();
+    const sender = kp.getPublicKey().toSuiAddress();
+    tx.setSender(sender);
+    const pkgHex = Buffer.from(packageId).toString("hex");
+    tx.moveCall({
+      target: `0x${pkgHex}::policy::seal_approve`,
+      arguments: [tx.pure.vector("u8", id)],
+    });
+
+    const txBytes = await tx.build({
+      client: suiClient() as any,
+      onlyTransactionKind: true,
+    });
+
+    const network =
+      env.WALRUS_NETWORK === "mainnet" ? ("mainnet" as const) : ("testnet" as const);
+    const keyServers = await retrieveKeyServers({
+      objectIds: getAllowlistedKeyServers(network),
+      client: suiClient() as any,
+    });
+    const ks = new KeyStore();
+    await ks.fetchKeys({
+      keyServers,
+      threshold: Math.min(3, keyServers.length),
+      packageId,
+      ids: [id],
+      txBytes,
+      sessionKey: session,
+    });
+    return await ks.decrypt(legacyEnc);
+  };
+
+  let pt: Uint8Array;
   try {
-    enc = EncryptedObject.parse(new Uint8Array(bytes));
-  } catch (err) {
-    throw new Error(
-      `SEAL_CIPHERTEXT_UNSUPPORTED: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    pt = await tryNewDecrypt();
+  } catch (err: any) {
+    if (
+      String(err?.message || "").includes("SEAL_CIPHERTEXT_UNSUPPORTED") ||
+      String(err?.message || "").includes("Unknown value")
+    ) {
+      pt = await tryLegacyDecrypt();
+    } else {
+      throw err;
+    }
   }
-  const packageId = enc.packageId;
-  const idHex = enc.id;
-
-  const ttlMin = 10;
-  const raw =
-    process.env.SUI_PLATFORM_PRIVATE_KEY || env.SUI_PLATFORM_PRIVATE_KEY;
-  if (!raw) throw new Error("SUI_PLATFORM_PRIVATE_KEY missing");
-  let kp: Ed25519Keypair;
-  if (raw.startsWith("suiprivkey")) {
-    const { secretKey } = decodeSuiPrivateKey(raw);
-    kp = Ed25519Keypair.fromSecretKey(secretKey);
-  } else {
-    const cleaned = raw.includes(":") ? raw.split(":").pop()! : raw;
-    const buf = cleaned.startsWith("0x")
-      ? new Uint8Array(Buffer.from(cleaned.slice(2), "hex"))
-      : fromB64(cleaned);
-    kp = Ed25519Keypair.fromSecretKey(buf);
-  }
-
-  const session = await SessionKey.create({
-    address: kp.getPublicKey().toSuiAddress(),
-    packageId,
-    ttlMin,
-    signer: kp,
-    suiClient: suiClient() as any,
-  });
-
-  const tx = new Transaction();
-  const sender = kp.getPublicKey().toSuiAddress();
-  tx.setSender(sender);
-  tx.moveCall({
-    target: `${packageId}::policy::seal_approve`,
-    arguments: [tx.pure.vector("u8", fromHex(idHex))],
-  });
-
-  const txBytes = await tx.build({
-    client: suiClient() as any,
-    onlyTransactionKind: true,
-  });
-
-  const keyServerIds = getKeyServerIds();
-  const seal = createSealClient(keyServerIds);
-  await seal.fetchKeys({
-    ids: [idHex],
-    txBytes,
-    sessionKey: session,
-    threshold: enc.threshold,
-  });
-  const pt = await seal.decrypt({
-    data: new Uint8Array(bytes),
-    sessionKey: session,
-    txBytes,
-  });
 
   const CHUNK_SIZE = 256 * 1024;
   const out: string[] = [];

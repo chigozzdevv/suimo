@@ -13,6 +13,7 @@
     "@fastify/formbody": "^8.0.2",
     "@fastify/helmet": "^13.0.2",
     "@modelcontextprotocol/sdk": "^1.21.0",
+    "@mysten/seal-legacy": "npm:@mysten/seal@0.1.0",
     "@mysten/seal": "^0.9.4",
     "@mysten/sui": "^1.45.0",
     "@mysten/walrus": "^0.1.0",
