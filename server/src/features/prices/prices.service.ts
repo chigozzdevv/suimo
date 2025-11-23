@@ -6,7 +6,7 @@ interface PriceCache {
     lastUpdated: number;
 }
 
-const CACHE_TTL = 30 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 let cache: PriceCache = {
     sui_usd: null,
@@ -14,42 +14,35 @@ let cache: PriceCache = {
     lastUpdated: 0,
 };
 
-async function fetchFromBinance(): Promise<{
-    sui_usd: number | null;
-    wal_usd: number | null;
-}> {
+async function fetchFromMobula(): Promise<{ sui_usd: number | null; wal_usd: number | null }> {
     try {
         const [suiResponse, walResponse] = await Promise.all([
-            fetch("https://api.binance.com/api/v3/ticker/price?symbol=SUIUSDT",
-                { signal: AbortSignal.timeout(5000) }),
-            fetch("https://api.binance.com/api/v3/ticker/price?symbol=WALUSDT",
-                { signal: AbortSignal.timeout(5000) })
+            fetch("https://api.mobula.io/api/1/market/data?asset=sui", { signal: AbortSignal.timeout(5000) }),
+            fetch("https://api.mobula.io/api/1/market/data?asset=walrus", { signal: AbortSignal.timeout(5000) })
         ]);
 
         let sui_usd: number | null = null;
         let wal_usd: number | null = null;
 
         if (suiResponse.ok) {
-            const suiData = await suiResponse.json();
-            sui_usd = suiData?.price ? parseFloat(suiData.price) : null;
+            const data = await suiResponse.json();
+            sui_usd = data?.data?.price || null;
+            if (sui_usd) console.log(`[PriceService] Mobula: SUI=$${sui_usd}`);
         } else {
-            console.warn(`[PriceService] Binance SUI error: ${suiResponse.status}`);
+            console.warn(`[PriceService] Mobula SUI error: ${suiResponse.status}`);
         }
 
         if (walResponse.ok) {
-            const walData = await walResponse.json();
-            wal_usd = walData?.price ? parseFloat(walData.price) : null;
+            const data = await walResponse.json();
+            wal_usd = data?.data?.price || null;
+            if (wal_usd) console.log(`[PriceService] Mobula: WAL=$${wal_usd}`);
         } else {
-            console.warn(`[PriceService] Binance WAL error: ${walResponse.status}`);
-        }
-
-        if (sui_usd || wal_usd) {
-            console.log(`[PriceService] Binance: SUI=$${sui_usd}, WAL=$${wal_usd}`);
+            console.warn(`[PriceService] Mobula WAL error: ${walResponse.status}`);
         }
 
         return { sui_usd, wal_usd };
     } catch (error) {
-        console.warn("[PriceService] Binance failed:", error);
+        console.warn("[PriceService] Mobula failed:", error);
         return { sui_usd: null, wal_usd: null };
     }
 }
@@ -102,10 +95,11 @@ export async function fetchTokenPrices(): Promise<{
     let sui_usd: number | null = null;
     let wal_usd: number | null = null;
 
-    const binanceResult = await fetchFromBinance();
-    if (binanceResult.sui_usd) sui_usd = binanceResult.sui_usd;
-    if (binanceResult.wal_usd) wal_usd = binanceResult.wal_usd;
+    const mobulaResult = await fetchFromMobula();
+    if (mobulaResult.sui_usd) sui_usd = mobulaResult.sui_usd;
+    if (mobulaResult.wal_usd) wal_usd = mobulaResult.wal_usd;
 
+    // 2. Fallback to CoinGecko if needed
     if (!sui_usd || !wal_usd) {
         const coinGeckoResult = await fetchFromCoinGecko();
         if (!sui_usd && coinGeckoResult.sui_usd) sui_usd = coinGeckoResult.sui_usd;
