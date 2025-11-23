@@ -1,5 +1,7 @@
 declare module "@mysten/seal/dist/esm/encrypt.js" {
   export const encrypt: any;
+  export const DemType: any;
+  export const KemType: any;
 }
 
 declare module "@mysten/seal/dist/esm/dem.js" {
@@ -8,7 +10,4 @@ declare module "@mysten/seal/dist/esm/dem.js" {
   }
 }
 
-declare module "@mysten/seal/dist/esm/key-server.js" {
-  export const getAllowlistedKeyServers: any;
-  export const retrieveKeyServers: any;
-}
+declare module "@mysten/seal/dist/esm/key-server.js" {}

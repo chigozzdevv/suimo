@@ -733,49 +733,54 @@ class ApiService {
     size_bytes: number;
     cipher_meta: { algo: string; size_bytes: number };
   }> {
-    const sealMod: any = await import("@mysten/seal");
-    const { AesGcm256, encrypt: sealEncrypt, retrieveKeyServers } = sealMod;
-    const { SuiClient, getFullnodeUrl } = await import("@mysten/sui/client");
+    const encMod: any = await import(
+      "@mysten/seal/dist/esm/encrypt.js"
+    );
+    const demMod: any = await import("@mysten/seal/dist/esm/dem.js");
+    const { encrypt: sealEncrypt, DemType, KemType } = encMod;
+    const { AesGcm256 } = demMod;
 
-    const network = (
-      import.meta.env.VITE_WALRUS_NETWORK === "mainnet" ? "mainnet" : "testnet"
-    ) as "mainnet" | "testnet";
     const policyPackage = (
       import.meta.env.VITE_SEAL_POLICY_PACKAGE || ""
     ).toString();
     if (!policyPackage) throw new Error("Missing VITE_SEAL_POLICY_PACKAGE");
-    const hexToBytes = (hex: string) => {
-      const clean = hex.replace(/^0x/, "");
-      const arr: number[] = [];
-      for (let i = 0; i < clean.length; i += 2)
-        arr.push(parseInt(clean.slice(i, i + 2), 16));
-      return new Uint8Array(arr);
-    };
-    const pkgBytes = hexToBytes(policyPackage);
-    const sui = new SuiClient({
-      url: import.meta.env.VITE_SUI_RPC_URL || getFullnodeUrl(network),
-    });
 
-    let serverList: string[] = [];
+    let keyServers: {
+      objectId: string;
+      url: string;
+      pk: Uint8Array;
+    }[] = [];
     try {
       const r = await this.getSealKeyServers();
-      serverList = Array.isArray(r) ? r : [];
+      keyServers = Array.isArray(r)
+        ? r.map((ks: any) => ({
+          objectId: ks.objectId,
+          url: ks.url,
+          pk: typeof ks.pk === "string"
+            ? Uint8Array.from(atob(ks.pk), (c) => c.charCodeAt(0))
+            : new Uint8Array(ks.pk),
+        }))
+        : [];
     } catch { }
-    if (!serverList.length) throw new Error("SEAL_KEY_SERVERS_UNAVAILABLE");
+    if (!keyServers.length) throw new Error("SEAL_KEY_SERVERS_UNAVAILABLE");
 
-    const keyServers = await retrieveKeyServers({
-      objectIds: serverList.map(hexToBytes),
-      client: sui as any,
-    });
-
-    const idBytes = crypto.getRandomValues(new Uint8Array(32));
+    const idHex = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")}`;
     const data = new Uint8Array(await file.arrayBuffer());
     const input = new AesGcm256(data, new Uint8Array());
     const { encryptedObject } = await sealEncrypt({
-      keyServers,
+      keyServers: keyServers.map((ks) => ({
+        objectId: ks.objectId,
+        url: ks.url,
+        pk: ks.pk,
+        keyType: 0,
+      })),
       threshold: Math.min(3, keyServers.length),
-      packageId: pkgBytes,
-      id: idBytes,
+      packageId: policyPackage,
+      id: idHex,
+      kemType: KemType.BonehFranklinBLS12381DemCCA,
+      demType: DemType.AesGcm256,
       encryptionInput: input,
     });
 
@@ -876,11 +881,16 @@ class ApiService {
     });
   }
 
-  async getSealKeyServers(): Promise<string[]> {
-    const res = await this.request<{ objectIds: string[] }>(
+  async getSealKeyServers(): Promise<
+    { objectId: string; url: string; pk: string }[]
+  > {
+    const res = await this.request<{
+      objectIds: string[];
+      keyServers: { objectId: string; url: string; pk: string }[];
+    }>(
       `/seal/key-servers`,
     );
-    return Array.isArray(res.objectIds) ? res.objectIds : [];
+    return Array.isArray(res.keyServers) ? res.keyServers : [];
   }
 
   async extendWalrusStorage(params: {

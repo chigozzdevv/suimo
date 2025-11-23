@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mysten/seal": "^0.1.0",
+    "@mysten/seal": "^0.9.4",
     "@mysten/sui": "^1.45.0",
     "@mysten/wallet-standard": "^0.19.7",
     "framer-motion": "^12.23.24",

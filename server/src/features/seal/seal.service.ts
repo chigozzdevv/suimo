@@ -110,6 +110,11 @@ async function fetchKeyServers(keyServerIds: string[]): Promise<KeyServerInfo[]>
   return servers;
 }
 
+export async function listSealKeyServers(): Promise<KeyServerInfo[]> {
+  const keyServerIds = getKeyServerIds();
+  return await fetchKeyServers(keyServerIds);
+}
+
 export async function sealEncryptForPolicy(
   plaintext: Uint8Array,
   _policyId: string,

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { loadEnv } from "@/config/env.js";
+import { listSealKeyServers } from "@/features/seal/seal.service.js";
 
 const DEFAULT_TESTNET_KEY_SERVERS = [
   "0xb35a7228d8cf224ad1e828c0217c95a5153bafc2906d6f9c178197dce26fbcf8",
@@ -22,6 +23,7 @@ export async function registerSealRoutes(app: FastifyInstance) {
         : network === "testnet"
           ? DEFAULT_TESTNET_KEY_SERVERS
           : [];
+      const keyServers = await listSealKeyServers();
       const toHex = (id: unknown): string => {
         if (!id) return "";
         if (typeof id === "string") return id.startsWith("0x") ? id : `0x${id}`;
@@ -35,9 +37,17 @@ export async function registerSealRoutes(app: FastifyInstance) {
       const objectIds = Array.isArray(ids)
         ? ids.map(toHex).filter(Boolean)
         : [];
-      return { objectIds };
+      return {
+        objectIds,
+        keyServers: keyServers.map((ks) => ({
+          objectId: ks.objectId,
+          url: ks.url,
+          pk: Buffer.from(ks.pk).toString("base64"),
+          name: ks.name,
+        })),
+      };
     } catch {
-      return { objectIds: [] };
+      return { objectIds: [], keyServers: [] };
     }
   });
 }
