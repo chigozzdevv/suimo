@@ -1,7 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
-import { getAllowlistedKeyServers } from "@mysten/seal";
 import { loadEnv } from "@/config/env.js";
+
+const DEFAULT_TESTNET_KEY_SERVERS = [
+  "0xb35a7228d8cf224ad1e828c0217c95a5153bafc2906d6f9c178197dce26fbcf8",
+  "0x2d6cde8a9d9a65bde3b0a346566945a63b4bfb70e9a06c41bdb70807e2502b06",
+];
 
 export async function registerSealRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -11,7 +15,13 @@ export async function registerSealRoutes(app: FastifyInstance) {
       env.WALRUS_NETWORK === "mainnet" ? "mainnet" : "testnet"
     ) as "mainnet" | "testnet";
     try {
-      const ids = getAllowlistedKeyServers(network);
+      const ids = env.SEAL_KEY_SERVER_IDS
+        ? env.SEAL_KEY_SERVER_IDS.split(",")
+          .map((id) => id.trim())
+          .filter(Boolean)
+        : network === "testnet"
+          ? DEFAULT_TESTNET_KEY_SERVERS
+          : [];
       const toHex = (id: unknown): string => {
         if (!id) return "";
         if (typeof id === "string") return id.startsWith("0x") ? id : `0x${id}`;
