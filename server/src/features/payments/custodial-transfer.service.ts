@@ -30,11 +30,21 @@ export async function transferWalFromUser(
     const suiClient = client();
     const owner = keypair.getPublicKey().toSuiAddress();
 
+    console.log(`[CustodialTransfer] Transferring from user: ${userId}`);
+    console.log(`[CustodialTransfer] Sender Address: ${owner}`);
+    console.log(`[CustodialTransfer] CoinType: ${coinType}`);
+    console.log(`[CustodialTransfer] Decimals: ${decimals}`);
+
     const coins = await suiClient.getCoins({ owner, coinType, limit: 200 });
     const total = coins.data.reduce((acc, x) => acc + BigInt(x.balance), 0n);
     const need = toAtomic(amountWal, decimals);
 
+    console.log(`[CustodialTransfer] Total Balance (Atomic): ${total}`);
+    console.log(`[CustodialTransfer] Need (Atomic): ${need}`);
+    console.log(`[CustodialTransfer] Coins found: ${coins.data.length}`);
+
     if (total < need) {
+        console.error(`[CustodialTransfer] INSUFFICIENT_WAL_BALANCE. Total: ${total}, Need: ${need}`);
         throw new Error("INSUFFICIENT_WAL_BALANCE");
     }
 
