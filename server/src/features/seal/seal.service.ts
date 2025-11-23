@@ -108,7 +108,15 @@ export async function sealDecryptForAccess(
   session.setPersonalMessageSignature(sig);
 
   const tx = new Transaction();
-  tx.setSender(kp.getPublicKey().toSuiAddress());
+  const sender = kp.getPublicKey().toSuiAddress();
+  tx.setSender(sender);
+
+  const pkgHex = Buffer.from(packageId).toString("hex");
+  tx.moveCall({
+    target: `0x${pkgHex}::policy::seal_approve`,
+    arguments: [tx.pure.vector("u8", id)],
+  });
+
   const txBytes = await tx.build({ onlyTransactionKind: true });
 
   await ks.fetchKeys({
