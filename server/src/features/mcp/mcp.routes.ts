@@ -23,6 +23,7 @@ export async function registerMcpRoutes(app: FastifyInstance) {
   app.route({
     method: ["GET", "POST", "DELETE"],
     url: "/",
+    bodyLimit: 10485760, // 10MB limit for MCP messages
     handler: async (req, reply) => {
       await requireOAuth(req, reply);
       if (reply.sent) return;
@@ -60,6 +61,18 @@ export async function registerMcpRoutes(app: FastifyInstance) {
       }
     },
   });
+
+  app.addContentTypeParser(
+    "application/octet-stream",
+    { parseAs: "buffer" },
+    async (req: any, payload: any) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of payload) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
+    },
+  );
 
   app.addHook("onClose", async () => {
     await runtime.server.close().catch(() => undefined);

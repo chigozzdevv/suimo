@@ -1,6 +1,6 @@
 # Suimo — Authorized data for AI agents (powered by Walrus and Sui)
 
-Suimo lets AI agents fetch authorized content with consent, metering, and instant settlement in WAL tokens on Sui. Content blobs are stored publicly on Walrus, encrypted with Seal and unlocked on-chain via policy-gated decryption.
+Suimo lets AI agents fetch and use authorized content with consent, metering, and instant settlement in WAL tokens on Sui. Content blobs are stored publicly on Walrus, encrypted with Seal and unlocked on-chain via policy-gated decryption.
 
 ## Powered by Walrus & Sui
 
